@@ -715,7 +715,7 @@ footer.foot b { color: var(--fg); }
       <button class="btn" id="next" type="button" aria-label="下一幕">下一幕 ▶</button>
       <div class="seek" id="seek" role="slider" tabindex="0" aria-label="播放進度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="track"><div class="fill" id="fill"></div><div class="ticks" id="ticks"></div></div></div>
       <span class="time" id="time">0:00 / 0:00</span>
-      <button class="btn" id="voice" type="button" aria-pressed="false">旁白語音：關</button>
+      <button class="btn" id="voice" type="button" aria-pressed="true">聲音：開</button>
       <select class="btn" id="speed" aria-label="播放速度"><option value="0.8">0.8×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option></select>
     </div>
     <nav class="chapters" id="chapters" aria-label="章節"></nav>
@@ -833,11 +833,295 @@ const LISTEN = { A: "allan_smile", R: "arale_thumb" };
 /* ---------- timeline ---------- */
 const stage = document.getElementById("stage");
 const sceneEls = [...stage.querySelectorAll(".scene")];
-const lineDur = t => 1.6 + [...t].length * 0.17;
+/* TIMING comes from build_audio.py: one pre-recorded MP3 per line (Allan: 台灣男聲, 阿拉蕾: 活潑小女生) */
+const TIMING = {
+ "title": [
+  {
+   "src": "audio/s00_l01_R_49885fe0.mp3",
+   "dur": 8.448
+  },
+  {
+   "src": "audio/s00_l02_A_138669f6.mp3",
+   "dur": 7.68
+  }
+ ],
+ "rhythm": [
+  {
+   "src": "audio/s01_l01_R_9fafd22d.mp3",
+   "dur": 4.56
+  },
+  {
+   "src": "audio/s01_l02_A_95dbbc27.mp3",
+   "dur": 6.504
+  },
+  {
+   "src": "audio/s01_l03_A_342814a0.mp3",
+   "dur": 6.336
+  },
+  {
+   "src": "audio/s01_l04_R_789cca45.mp3",
+   "dur": 4.728
+  },
+  {
+   "src": "audio/s01_l05_A_46b67403.mp3",
+   "dur": 6.984
+  }
+ ],
+ "pdca": [
+  {
+   "src": "audio/s02_l01_A_677b1890.mp3",
+   "dur": 6.624
+  },
+  {
+   "src": "audio/s02_l02_R_a4430205.mp3",
+   "dur": 5.352
+  },
+  {
+   "src": "audio/s02_l03_A_0fefc50e.mp3",
+   "dur": 8.016
+  },
+  {
+   "src": "audio/s02_l04_A_bae6e923.mp3",
+   "dur": 6.792
+  },
+  {
+   "src": "audio/s02_l05_R_ee132b30.mp3",
+   "dur": 5.184
+  }
+ ],
+ "daily": [
+  {
+   "src": "audio/s03_l01_R_46ee019a.mp3",
+   "dur": 5.52
+  },
+  {
+   "src": "audio/s03_l02_A_69f49235.mp3",
+   "dur": 6.696
+  },
+  {
+   "src": "audio/s03_l03_R_51bd6cfc.mp3",
+   "dur": 5.472
+  },
+  {
+   "src": "audio/s03_l04_A_502faaf9.mp3",
+   "dur": 7.128
+  },
+  {
+   "src": "audio/s03_l05_R_aed74f0d.mp3",
+   "dur": 4.968
+  },
+  {
+   "src": "audio/s03_l06_A_ba861519.mp3",
+   "dur": 6.24
+  },
+  {
+   "src": "audio/s03_l07_R_f20e201f.mp3",
+   "dur": 4.488
+  },
+  {
+   "src": "audio/s03_l08_A_8b917aa3.mp3",
+   "dur": 5.64
+  },
+  {
+   "src": "audio/s03_l09_R_f875495e.mp3",
+   "dur": 6.96
+  }
+ ],
+ "monthly": [
+  {
+   "src": "audio/s04_l01_R_9c5023a2.mp3",
+   "dur": 5.04
+  },
+  {
+   "src": "audio/s04_l02_A_14019942.mp3",
+   "dur": 6.6
+  },
+  {
+   "src": "audio/s04_l03_R_06816d2b.mp3",
+   "dur": 7.08
+  },
+  {
+   "src": "audio/s04_l04_A_cc8542ed.mp3",
+   "dur": 6.0
+  },
+  {
+   "src": "audio/s04_l05_R_a6852efe.mp3",
+   "dur": 5.496
+  }
+ ],
+ "quarter": [
+  {
+   "src": "audio/s05_l01_A_b49ab3bc.mp3",
+   "dur": 7.032
+  },
+  {
+   "src": "audio/s05_l02_R_52f0460d.mp3",
+   "dur": 6.552
+  },
+  {
+   "src": "audio/s05_l03_A_4f67e8b8.mp3",
+   "dur": 6.288
+  },
+  {
+   "src": "audio/s05_l04_R_bf07c8ce.mp3",
+   "dur": 2.544
+  },
+  {
+   "src": "audio/s05_l05_A_6a60866c.mp3",
+   "dur": 4.92
+  },
+  {
+   "src": "audio/s05_l06_R_1c85ef04.mp3",
+   "dur": 4.824
+  }
+ ],
+ "year": [
+  {
+   "src": "audio/s06_l01_R_46d4e739.mp3",
+   "dur": 4.248
+  },
+  {
+   "src": "audio/s06_l02_A_69f0860e.mp3",
+   "dur": 7.44
+  },
+  {
+   "src": "audio/s06_l03_R_e3952e7d.mp3",
+   "dur": 7.608
+  },
+  {
+   "src": "audio/s06_l04_A_c8873028.mp3",
+   "dur": 6.528
+  },
+  {
+   "src": "audio/s06_l05_R_f747ecf9.mp3",
+   "dur": 8.424
+  },
+  {
+   "src": "audio/s06_l06_A_6fb12169.mp3",
+   "dur": 5.544
+  },
+  {
+   "src": "audio/s06_l07_R_eabd6ebd.mp3",
+   "dur": 5.784
+  },
+  {
+   "src": "audio/s06_l08_A_86783897.mp3",
+   "dur": 2.904
+  }
+ ],
+ "caps": [
+  {
+   "src": "audio/s07_l01_A_5739eae9.mp3",
+   "dur": 6.168
+  },
+  {
+   "src": "audio/s07_l02_R_da4ffa9a.mp3",
+   "dur": 5.64
+  },
+  {
+   "src": "audio/s07_l03_A_d1c929ba.mp3",
+   "dur": 8.208
+  },
+  {
+   "src": "audio/s07_l04_R_0c1b5f99.mp3",
+   "dur": 6.0
+  },
+  {
+   "src": "audio/s07_l05_A_ae97b3c4.mp3",
+   "dur": 4.608
+  }
+ ],
+ "incident": [
+  {
+   "src": "audio/s08_l01_R_97c652f4.mp3",
+   "dur": 7.536
+  },
+  {
+   "src": "audio/s08_l02_A_5abe0c25.mp3",
+   "dur": 5.568
+  },
+  {
+   "src": "audio/s08_l03_R_5bd3ce81.mp3",
+   "dur": 4.32
+  },
+  {
+   "src": "audio/s08_l04_A_1f5bfa65.mp3",
+   "dur": 5.664
+  },
+  {
+   "src": "audio/s08_l05_R_9cff06e8.mp3",
+   "dur": 5.4
+  },
+  {
+   "src": "audio/s08_l06_A_13430308.mp3",
+   "dur": 4.008
+  }
+ ],
+ "audit": [
+  {
+   "src": "audio/s09_l01_R_1296b4fb.mp3",
+   "dur": 4.44
+  },
+  {
+   "src": "audio/s09_l02_A_fd57bd77.mp3",
+   "dur": 4.92
+  },
+  {
+   "src": "audio/s09_l03_A_4adb6769.mp3",
+   "dur": 5.28
+  },
+  {
+   "src": "audio/s09_l04_R_72d23a1b.mp3",
+   "dur": 5.448
+  },
+  {
+   "src": "audio/s09_l05_A_4b34d1c8.mp3",
+   "dur": 5.112
+  }
+ ],
+ "value": [
+  {
+   "src": "audio/s10_l01_A_12c1d2b6.mp3",
+   "dur": 3.192
+  },
+  {
+   "src": "audio/s10_l02_R_a3e4e6ff.mp3",
+   "dur": 7.344
+  },
+  {
+   "src": "audio/s10_l03_A_87d3378c.mp3",
+   "dur": 6.168
+  },
+  {
+   "src": "audio/s10_l04_R_a1282327.mp3",
+   "dur": 7.056
+  },
+  {
+   "src": "audio/s10_l05_A_c022b9ff.mp3",
+   "dur": 6.768
+  }
+ ],
+ "end": [
+  {
+   "src": "audio/s11_l01_R_eb9afda0.mp3",
+   "dur": 4.176
+  },
+  {
+   "src": "audio/s11_l02_A_72ed0d1b.mp3",
+   "dur": 4.824
+  }
+ ]
+};
+const GAP = 0.45; // pause after each line
 let total = 0;
 const scenes = sceneEls.map((el, i) => {
   const s = SCRIPT[el.dataset.id];
-  const lines = s.lines.map(([w, f, t]) => { const l = { w, f, t, start: total, dur: lineDur(t) }; total += l.dur; return l; });
+  const lines = s.lines.map(([w, f, t], k) => {
+    const a = (TIMING[el.dataset.id] || [])[k];
+    const adur = a ? a.dur : 1.2 + [...t].length * 0.2;
+    const l = { w, f, t, src: a ? a.src : null, adur, start: total, dur: adur + GAP };
+    total += l.dur; return l;
+  });
   total += 0.6; // breath between scenes
   return { el, i, name: s.name, mode: el.dataset.mode || "bust", lines, start: lines[0].start, end: total,
            steps: [...el.querySelectorAll("[data-at]")].map(n => ({ n, at: +n.dataset.at, until: n.dataset.until == null ? Infinity : +n.dataset.until })) };
@@ -889,11 +1173,10 @@ function render() {
     $("capFace").src = SPRITES[L.f];
     $("capWho").textContent = NAMES[L.w] + "｜" + s.name;
     $("capText").textContent = L.t;
-    if (playing && voiceOn) speak(L);
   }
   const L = s.lines[li];
   const chars = [...L.t];
-  const n = playing || T > L.start ? Math.min(chars.length, Math.floor((T - L.start) * 22) + 1) : chars.length;
+  const n = playing || T > L.start ? Math.min(chars.length, Math.floor((T - L.start) / L.adur * chars.length) + 1) : chars.length;
   bubbleText.innerHTML = "";
   bubbleText.append(chars.slice(0, Math.max(n, 1)).join(""));
   if (n < chars.length) { const c = document.createElement("span"); c.className = "caret"; bubbleText.append(c); }
@@ -902,42 +1185,33 @@ function render() {
   $("time").textContent = `${fmt(T)} / ${fmt(total)}`;
 }
 
-/* ---------- voice (optional) ---------- */
-let voiceOn = false, speaking = false, uttId = 0, zhVoice = null;
-const synth = window.speechSynthesis;
-function pickVoice() {
-  try {
-    const vs = synth.getVoices();
-    zhVoice = vs.find(v => /zh[-_]TW/i.test(v.lang)) || vs.find(v => /zh[-_](HK|Hant)/i.test(v.lang)) || vs.find(v => /^zh/i.test(v.lang)) || null;
-  } catch (e) { zhVoice = null; }
+/* ---------- audio ---------- */
+let soundOn = true, audio = null, audioLine = null;
+function stopAudio() { if (audio) { audio.pause(); audio.removeAttribute("src"); audio.load(); } audio = null; audioLine = null; }
+function syncAudio() {
+  const { si, li } = locate(T);
+  const L = scenes[si].lines[li];
+  if (!soundOn || !L.src || T - L.start >= L.adur - 0.05) { if (audioLine !== L) stopAudio(); return; }
+  if (L === audioLine) return;
+  stopAudio();
+  audioLine = L;
+  audio = new Audio(L.src);
+  audio.playbackRate = rate;
+  try { audio.currentTime = Math.max(0, T - L.start); } catch (e) {}
+  audio.play().catch(() => {});
+  const all = scenes.flatMap(s => s.lines), nx = all[all.indexOf(L) + 1];
+  if (nx && nx.src) { const p = new Audio(); p.preload = "auto"; p.src = nx.src; }
 }
-if (synth) { pickVoice(); try { synth.onvoiceschanged = pickVoice; } catch (e) {} }
-function speak(L) {
-  if (!synth) return;
-  try {
-    synth.cancel();
-    const u = new SpeechSynthesisUtterance(L.t);
-    u.lang = zhVoice ? zhVoice.lang : "zh-TW"; if (zhVoice) u.voice = zhVoice;
-    u.pitch = L.w === "R" ? 1.45 : 0.85; u.rate = Math.min(2, 1.08 * rate);
-    const id = ++uttId; speaking = true;
-    u.onend = u.onerror = () => { if (id === uttId) speaking = false; };
-    synth.speak(u);
-  } catch (e) { speaking = false; }
-}
-function hush() { speaking = false; uttId++; try { synth && synth.cancel(); } catch (e) {} }
 
 /* ---------- clock ---------- */
 let last = performance.now();
 function tick(now) {
   const dt = Math.min(0.25, (now - last) / 1000); last = now;
   if (playing) {
-    const { si, li } = locate(T);
-    const L = scenes[si].lines[li];
-    let next = T + dt * rate;
-    const lineEnd = L.start + L.dur;
-    if (voiceOn && speaking && next >= lineEnd) next = lineEnd - 0.001;
-    T = next;
+    if (audio && audioLine && !audio.paused && !audio.ended && audio.currentTime > 0) T = audioLine.start + audio.currentTime;
+    else T += dt * rate;
     if (T >= total) { T = total - 0.001; setPlaying(false); }
+    else syncAudio();
     render();
   }
   requestAnimationFrame(tick);
@@ -946,10 +1220,10 @@ function setPlaying(p) {
   playing = p;
   $("play").textContent = p ? "❚❚ 暫停" : "▶ 播放";
   $("playBig").hidden = p;
-  if (!p) hush();
+  if (!p) stopAudio(); else syncAudio();
   curL = -2; render();
 }
-function seekTo(t) { T = Math.max(0, Math.min(total - 0.001, t)); hush(); curL = -2; render(); }
+function seekTo(t) { T = Math.max(0, Math.min(total - 0.001, t)); stopAudio(); if (playing) syncAudio(); curL = -2; render(); }
 
 /* ---------- controls ---------- */
 const chapBox = $("chapters");
@@ -979,13 +1253,12 @@ seekEl.addEventListener("keydown", e => {
   if (e.key === "ArrowRight") { seekTo(T + 5); e.preventDefault(); }
   if (e.key === "ArrowLeft") { seekTo(T - 5); e.preventDefault(); }
 });
-$("speed").addEventListener("change", e => { rate = +e.target.value; });
+$("speed").addEventListener("change", e => { rate = +e.target.value; if (audio) audio.playbackRate = rate; });
 $("voice").addEventListener("click", () => {
-  voiceOn = !voiceOn;
-  $("voice").setAttribute("aria-pressed", String(voiceOn));
-  $("voice").textContent = "旁白語音：" + (voiceOn ? "開" : "關");
-  if (!synth && voiceOn) $("voice").textContent = "此瀏覽器不支援語音";
-  if (voiceOn && playing) { const { si, li } = locate(T); speak(scenes[si].lines[li]); } else hush();
+  soundOn = !soundOn;
+  $("voice").setAttribute("aria-pressed", String(soundOn));
+  $("voice").textContent = "聲音：" + (soundOn ? "開" : "關");
+  if (soundOn && playing) syncAudio(); else stopAudio();
 });
 $("stageWrap").addEventListener("keydown", e => {
   if (e.key === " " || e.key === "Enter") { e.preventDefault(); setPlaying(!playing); }
