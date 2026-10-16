@@ -1,0 +1,1066 @@
+<title>ISMS 的一年</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Allan 顧問與 AI 小助手阿拉蕾帶你看企業 ISMS 的日常、每月、每季與每年工作。製作：Allan Lo，2026/10/16">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: a comic-panel "screening room" — one 16:9 stage drawn in thick ink like the character sheets, player controls and a quick-reference worklist below. */
+:root {
+  /* stage world: fixed comic palette taken from the characters (navy blazer, teal jacket, yolk hoodie) */
+  --ink: #1b2340;
+  --paper: #f3f6fb;
+  --panel: #ffffff;
+  --navy: #263a6e;
+  --teal: #13939d;
+  --teal-soft: #d3f0f0;
+  --yolk: #f3b61f;
+  --yolk-soft: #fdf0c8;
+  --coral: #e5523f;
+  --coral-soft: #fbdcd6;
+  --sky: #d7e6f6;
+  --stage-muted: #56628a;
+
+  /* page chrome tokens (themed) */
+  --bg: #eef2f8;
+  --fg: #1b2340;
+  --sub: #55607f;
+  --line: #c9d2e3;
+  --card: #ffffff;
+  --accent: #127f88;
+  --accent-ink: #ffffff;
+  --chip: #e3eaf5;
+
+  --f-display: "Huninn", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --f-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12172a; --fg: #e8ecf6; --sub: #a3adc8; --line: #2c3654; --card: #1a2138;
+    --accent: #3cc3cc; --accent-ink: #0d1424; --chip: #243052; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12172a; --fg: #e8ecf6; --sub: #a3adc8; --line: #2c3654; --card: #1a2138;
+  --accent: #3cc3cc; --accent-ink: #0d1424; --chip: #243052; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 15px; line-height: 1.6; }
+.page {
+  max-width: 1180px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 48px;
+  display: grid; gap: 28px;
+}
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+header.top .eyebrow { font-size: 12px; letter-spacing: .14em; color: var(--sub); text-transform: uppercase; font-weight: 700; }
+header.top h1 { margin: 2px 0 0; font-family: var(--f-display); font-size: clamp(28px, 4.4vw, 44px); line-height: 1.15; text-wrap: balance; font-weight: 400; }
+header.top h1 em { font-style: normal; color: var(--accent); }
+header.top .by { font-size: 13px; color: var(--sub); text-align: right; }
+header.top .by b { color: var(--fg); }
+
+/* ---------- player ---------- */
+.player { display: grid; gap: 12px; }
+.stage-wrap {
+  position: relative; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; overflow: hidden;
+  border: 3px solid var(--ink); border-radius: 14px; background: var(--paper);
+  box-shadow: 6px 6px 0 var(--ink); cursor: pointer;
+}
+.stage {
+  position: absolute; left: 0; top: 0; width: 1280px; height: 720px; transform-origin: 0 0;
+  transform: scale(var(--s, .5)); color: var(--ink); font-family: var(--f-body); overflow: hidden;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(27,35,64,.09) 1.2px, transparent 1.6px) 0 0 / 18px 18px,
+    var(--paper);
+}
+.scene { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity .45s ease, visibility 0s linear .45s; }
+.scene.active { opacity: 1; visibility: visible; transition: opacity .45s ease; }
+.scene [data-at] { opacity: 0; transform: translateY(18px) scale(.96); transition: opacity .45s ease, transform .55s cubic-bezier(.2,1.5,.4,1); }
+.scene [data-at].on { opacity: 1; transform: none; }
+.scene [data-at].from-l { transform: translateX(-40px); }
+.scene [data-at].from-r { transform: translateX(40px); }
+.scene [data-at].zoom { transform: scale(.4) rotate(-8deg); }
+.scene [data-at].from-l.on, .scene [data-at].from-r.on, .scene [data-at].zoom.on { transform: none; }
+
+.tag {
+  position: absolute; left: 28px; top: 22px; display: flex; align-items: center; gap: 10px;
+  font-family: var(--f-display); font-size: 26px; background: var(--panel);
+  border: 3px solid var(--ink); border-radius: 10px; padding: 4px 16px 4px 6px; box-shadow: 4px 4px 0 var(--ink);
+}
+.tag b { background: var(--ink); color: var(--paper); border-radius: 6px; padding: 0 10px; font-weight: 400; font-size: 20px; }
+.brand { position: absolute; right: 28px; top: 30px; font-family: var(--f-display); font-size: 18px; color: var(--stage-muted); }
+.brand i { font-style: normal; color: var(--teal); }
+
+.panel { background: var(--panel); border: 3px solid var(--ink); border-radius: 14px; box-shadow: 5px 5px 0 var(--ink); }
+.code { font-family: var(--f-mono); font-size: 14px; font-weight: 700; background: var(--sky); border: 2px solid var(--ink); border-radius: 6px; padding: 1px 7px; white-space: nowrap; }
+.code.y { background: var(--yolk-soft); }
+.code.t { background: var(--teal-soft); }
+.code.r { background: var(--coral-soft); }
+
+/* characters */
+.bust { position: absolute; bottom: 0; height: 196px; width: 220px; display: flex; align-items: flex-end; justify-content: center; z-index: 5; transition: opacity .3s, transform .3s; }
+.bust img { max-height: 196px; max-width: 220px; filter: drop-shadow(3px 3px 0 rgba(27,35,64,.25)); }
+.bust.allan { left: 6px; }
+.bust.arale { right: 6px; }
+.bust .nm { position: absolute; bottom: 6px; font-family: var(--f-display); font-size: 15px; background: var(--ink); color: var(--paper); border-radius: 20px; padding: 0 10px; }
+.bust.talking img, .full.talking { animation: bob .42s ease-in-out infinite alternate; }
+.bust:not(.talking) { opacity: .92; }
+@keyframes bob { from { transform: translateY(0) rotate(-.6deg); } to { transform: translateY(-6px) rotate(.6deg); } }
+.stage[data-mode="full"] .bust { opacity: 0; transform: translateY(40px); pointer-events: none; }
+.full { position: absolute; bottom: 8px; filter: drop-shadow(4px 4px 0 rgba(27,35,64,.22)); transform-origin: 50% 100%; }
+
+.bubble {
+  position: absolute; left: 238px; right: 238px; bottom: 22px; min-height: 96px; z-index: 6;
+  background: var(--panel); border: 3px solid var(--ink); border-radius: 22px; box-shadow: 5px 5px 0 var(--ink);
+  padding: 14px 24px 14px; font-family: var(--f-display); font-size: 27px; line-height: 1.42; color: var(--ink);
+  display: flex; flex-direction: column; justify-content: center; transition: opacity .2s;
+}
+.bubble .who { font-size: 15px; color: var(--teal); letter-spacing: .06em; }
+.bubble.allan .who { color: var(--navy); }
+.bubble::before, .bubble::after { content: ""; position: absolute; bottom: 26px; width: 0; height: 0; border: 15px solid transparent; }
+.bubble.allan::before { left: -30px; border-right: 15px solid var(--ink); border-left: 0; border-width: 15px 22px 15px 0; }
+.bubble.allan::after { left: -22px; border-right-color: var(--panel); border-width: 11px 17px 11px 0; border-left: 0; bottom: 30px; }
+.bubble.arale::before { right: -30px; border-left: 22px solid var(--ink); border-right: 0; border-width: 15px 0 15px 22px; }
+.bubble.arale::after { right: -22px; border-left-color: var(--panel); border-width: 11px 0 11px 17px; border-right: 0; bottom: 30px; }
+.bubble.empty { opacity: 0; }
+.caret { display: inline-block; width: .5em; height: 1em; vertical-align: -2px; background: var(--teal); margin-left: 2px; animation: blink .8s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+.playbig {
+  position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(27,35,64,.18);
+  transition: opacity .25s; border: 0; padding: 0; cursor: pointer;
+}
+.playbig span {
+  width: clamp(60px, 11vw, 132px); height: clamp(60px, 11vw, 132px); border-radius: 50%; background: var(--yolk); border: 4px solid var(--ink); box-shadow: 5px 5px 0 var(--ink);
+  display: grid; place-items: center;
+}
+.playbig span::after { content: ""; border-left: clamp(20px, 3.6vw, 44px) solid var(--ink); border-top: clamp(13px, 2.3vw, 28px) solid transparent; border-bottom: clamp(13px, 2.3vw, 28px) solid transparent; margin-left: 12%; }
+.playbig[hidden] { display: none !important; }
+
+/* ---------- scene 0 / 11 : title + ending ---------- */
+.rays { position: absolute; left: 50%; top: 46%; width: 1600px; height: 1600px; margin: -800px 0 0 -800px; border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, rgba(19,147,157,.10) 0 9deg, transparent 9deg 18deg); animation: spin 60s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.titleblock { position: absolute; left: 330px; right: 330px; top: 92px; text-align: center; display: grid; justify-items: center; gap: 6px; }
+.titleblock .kicker { font-size: 20px; font-weight: 700; letter-spacing: .3em; color: var(--stage-muted); }
+.titleblock h2 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 104px; line-height: 1.02; color: var(--ink);
+  text-shadow: 5px 5px 0 var(--yolk), 8px 8px 0 var(--ink); }
+.titleblock p { margin: 8px 0 0; font-size: 25px; font-weight: 700; }
+.shield { width: 108px; height: 124px; margin-top: 14px; display: grid; place-items: center; background: var(--teal); color: #fff; border: 4px solid var(--ink);
+  clip-path: polygon(50% 0, 100% 16%, 100% 58%, 50% 100%, 0 58%, 0 16%); font-family: var(--f-mono); font-weight: 700; font-size: 20px; line-height: 1.1; text-align: center; }
+.shieldwrap { filter: drop-shadow(4px 4px 0 var(--ink)); animation: floaty 3s ease-in-out infinite alternate; }
+@keyframes floaty { to { transform: translateY(-10px) rotate(3deg); } }
+.credit { position: absolute; left: 50%; top: 462px; transform: translateX(-50%); font-size: 20px; font-weight: 700; background: var(--ink); color: var(--paper); padding: 6px 22px; border-radius: 30px; white-space: nowrap; }
+.scene .credit[data-at] { transform: translateX(-50%) translateY(18px); }
+.scene .credit[data-at].on { transform: translateX(-50%); }
+
+/* ---------- scene 1 : rhythm ---------- */
+.rhythm { position: absolute; left: 40px; right: 40px; top: 110px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; }
+.rcard { padding: 16px 16px 18px; display: grid; gap: 8px; align-content: start; min-height: 330px; }
+.rcard .freq { font-family: var(--f-display); font-size: 40px; line-height: 1; }
+.rcard .ico { width: 64px; height: 64px; border: 3px solid var(--ink); border-radius: 14px; display: grid; place-items: center; }
+.rcard .ico svg { width: 42px; height: 42px; }
+.rcard .ana { font-size: 21px; font-weight: 900; }
+.rcard .mean { font-size: 18px; color: var(--stage-muted); line-height: 1.45; }
+.rcard.d .ico { background: var(--yolk-soft); } .rcard.m .ico { background: var(--teal-soft); } .rcard.q .ico { background: var(--sky); }
+.rcard.y .ico { background: #e4dcf7; } .rcard.e { background: var(--coral-soft); } .rcard.e .ico { background: var(--panel); }
+.rcard.e .freq { color: var(--coral); }
+
+/* ---------- scene 2 : PDCA + pyramid ---------- */
+.pdca { position: absolute; left: 60px; top: 100px; width: 400px; height: 400px; }
+.pdca .wheel { width: 100%; height: 100%; animation: spin 26s linear infinite; }
+.pdca .hub { position: absolute; left: 50%; top: 50%; width: 130px; height: 130px; margin: -65px 0 0 -65px; border-radius: 50%; background: var(--panel); border: 4px solid var(--ink);
+  display: grid; place-items: center; text-align: center; font-family: var(--f-mono); font-weight: 700; font-size: 15px; line-height: 1.25; }
+.clauses { position: absolute; left: 490px; top: 104px; width: 270px; display: grid; gap: 10px; }
+.clause { padding: 8px 12px; display: grid; grid-template-columns: 44px 1fr; gap: 10px; align-items: center; }
+.clause b { width: 44px; height: 44px; border-radius: 50%; border: 3px solid var(--ink); display: grid; place-items: center; font-family: var(--f-display); font-weight: 400; font-size: 24px; }
+.clause span { font-size: 17px; line-height: 1.3; }
+.clause small { display: block; font-size: 14px; color: var(--stage-muted); }
+.pyr { position: absolute; left: 800px; top: 96px; width: 420px; display: grid; gap: 8px; justify-items: center; }
+.layer { height: 76px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--ink); text-align: center;
+  clip-path: polygon(9% 0, 91% 0, 100% 100%, 0 100%); background: var(--ink); padding: 3px; }
+.layer > div { width: 100%; height: 100%; clip-path: polygon(9% 0, 91% 0, 100% 100%, 0 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; }
+.layer strong { font-size: 19px; line-height: 1.2; }
+.layer small { font-family: var(--f-mono); font-size: 14px; font-weight: 700; }
+.layer.l1 { width: 46%; } .layer.l1 > div { background: var(--yolk); }
+.layer.l2 { width: 64%; } .layer.l2 > div { background: var(--teal-soft); }
+.layer.l3 { width: 82%; } .layer.l3 > div { background: var(--sky); }
+.layer.l4 { width: 100%; } .layer.l4 > div { background: var(--panel); }
+.stamp { position: absolute; font-family: var(--f-display); color: var(--coral); border: 5px solid var(--coral); border-radius: 12px; padding: 4px 18px; background: rgba(255,255,255,.85); rotate: -7deg; }
+.scene .stamp[data-at] { transform: scale(2.4); }
+.scene .stamp[data-at].on { transform: scale(1); }
+
+/* ---------- scene 3 : a day ---------- */
+.dayline { position: absolute; left: 60px; right: 60px; top: 98px; height: 34px; }
+.dayline .bar { position: absolute; left: 0; right: 0; top: 15px; height: 6px; background: var(--ink); border-radius: 3px; }
+.dayline .sun { position: absolute; top: -4px; width: 44px; height: 44px; border-radius: 50%; background: var(--yolk); border: 3px solid var(--ink); transition: left 1.2s cubic-bezier(.4,0,.2,1); }
+.events { position: absolute; left: 40px; right: 40px; top: 146px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.ev { padding: 12px 14px 14px; display: grid; gap: 8px; align-content: start; min-height: 226px; }
+.ev .time { font-family: var(--f-mono); font-weight: 700; font-size: 22px; background: var(--ink); color: var(--paper); border-radius: 6px; padding: 0 8px; justify-self: start; }
+.ev h4 { margin: 0; font-size: 21px; line-height: 1.3; }
+.ev ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ev li { font-size: 16px; line-height: 1.35; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.routine { position: absolute; left: 40px; right: 40px; top: 432px; padding: 10px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--yolk-soft); }
+.routine b { font-family: var(--f-display); font-weight: 400; font-size: 22px; }
+.routine span { background: var(--panel); border: 2px solid var(--ink); border-radius: 30px; padding: 2px 12px; font-size: 16px; font-weight: 700; }
+
+/* ---------- scene 4 : monthly ---------- */
+.calpage { position: absolute; left: 60px; top: 100px; width: 520px; padding: 0 0 14px; overflow: hidden; }
+.calpage .rings { height: 46px; background: var(--coral); border-bottom: 3px solid var(--ink); display: flex; align-items: center; justify-content: space-between; padding: 0 18px; color: #fff; font-family: var(--f-display); font-size: 24px; }
+.calpage ul { list-style: none; margin: 0; padding: 12px 18px 0; display: grid; gap: 9px; }
+.calpage li { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: start; font-size: 18px; line-height: 1.35; }
+.calpage li .box { width: 28px; height: 28px; border: 3px solid var(--ink); border-radius: 6px; position: relative; background: var(--panel); }
+.calpage li.on .box::after { content: ""; position: absolute; left: 6px; top: -2px; width: 9px; height: 17px; border: solid var(--teal); border-width: 0 5px 5px 0; rotate: 40deg; animation: tick .4s ease-out; }
+@keyframes tick { from { scale: 0; } }
+.calpage li small { display: block; color: var(--stage-muted); font-size: 15px; }
+.kpis { position: absolute; left: 620px; top: 104px; width: 600px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.kpi { padding: 12px 8px; text-align: center; display: grid; justify-items: center; gap: 4px; }
+.kpi svg { width: 132px; height: 132px; }
+.kpi .ring { fill: none; stroke: var(--sky); stroke-width: 14; }
+.kpi .val { fill: none; stroke-width: 14; stroke-linecap: round; stroke-dasharray: 289; stroke-dashoffset: 289; transition: stroke-dashoffset 1.6s cubic-bezier(.3,0,.2,1) .2s; transform: rotate(-90deg); transform-origin: 60px 60px; }
+.kpi.on .val { stroke-dashoffset: var(--off); }
+.kpi text { font-family: var(--f-mono); font-weight: 700; font-size: 24px; fill: var(--ink); }
+.kpi b { font-size: 17px; }
+.note-ex { position: absolute; left: 620px; top: 330px; font-size: 14px; color: var(--stage-muted); }
+.bp { position: absolute; left: 620px; top: 362px; width: 600px; padding: 12px 18px; display: flex; gap: 16px; align-items: center; background: var(--teal-soft); }
+.bp .heart { width: 54px; height: 54px; flex: none; background: var(--coral); border: 3px solid var(--ink); border-radius: 50%; display: grid; place-items: center; color: #fff; font-family: var(--f-mono); font-weight: 700; animation: beat 1s ease-in-out infinite; }
+@keyframes beat { 15% { scale: 1.14; } 30% { scale: 1; } 45% { scale: 1.08; } 60% { scale: 1; } }
+.bp p { margin: 0; font-size: 19px; font-weight: 700; line-height: 1.4; }
+
+/* ---------- scene 5 : quarterly + half ---------- */
+.qwheel { position: absolute; left: 60px; top: 104px; width: 250px; height: 250px; }
+.qwheel .q { position: absolute; width: 118px; height: 118px; border: 3px solid var(--ink); display: grid; place-items: center; font-family: var(--f-display); font-size: 34px; }
+.qwheel .q:nth-child(1) { left: 0; top: 0; border-radius: 100% 0 0 0; background: var(--teal-soft); }
+.qwheel .q:nth-child(2) { right: 0; top: 0; border-radius: 0 100% 0 0; background: var(--yolk-soft); }
+.qwheel .q:nth-child(3) { right: 0; bottom: 0; border-radius: 0 0 100% 0; background: var(--coral-soft); }
+.qwheel .q:nth-child(4) { left: 0; bottom: 0; border-radius: 0 0 0 100%; background: var(--sky); }
+.qwheel .q.on { animation: qflash 2.4s ease-in-out infinite; }
+@keyframes qflash { 50% { filter: brightness(.86); } }
+.qlabel { position: absolute; left: 60px; top: 366px; width: 250px; text-align: center; font-family: var(--f-display); font-size: 21px; }
+.qlabel small { display: block; font-family: var(--f-body); font-size: 14px; color: var(--stage-muted); }
+.qlist { position: absolute; left: 340px; top: 100px; width: 880px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.qi { padding: 10px 14px; display: grid; gap: 4px; align-content: start; min-height: 112px; }
+.qi b { font-size: 19px; }
+.qi span { font-size: 15px; color: var(--stage-muted); line-height: 1.4; }
+.badge-adv { position: absolute; left: 340px; top: 72px; font-size: 14px; font-weight: 700; background: var(--yolk); border: 2px solid var(--ink); border-radius: 20px; padding: 0 10px; }
+.half { position: absolute; left: 340px; top: 360px; width: 880px; padding: 10px 16px; display: grid; grid-template-columns: 78px 1fr; gap: 14px; align-items: center; background: var(--yolk-soft); }
+.half .key { width: 78px; height: 78px; border-radius: 50%; border: 3px solid var(--ink); background: var(--yolk); display: grid; place-items: center; font-family: var(--f-display); font-size: 18px; text-align: center; line-height: 1.05; }
+.half p { margin: 0; font-size: 17px; line-height: 1.45; }
+.half p b { font-size: 19px; }
+
+/* ---------- scene 6 : the year ---------- */
+.months { position: absolute; left: 40px; right: 40px; top: 96px; display: grid; grid-template-columns: repeat(12, 1fr); gap: 8px; }
+.mon { position: relative; height: 92px; background: var(--panel); border: 3px solid var(--ink); border-radius: 10px; display: grid; place-items: center; text-align: center; padding: 4px; }
+.mon b { font-family: var(--f-display); font-weight: 400; font-size: 26px; line-height: 1; }
+.mon span { font-size: 13px; line-height: 1.2; font-weight: 700; color: var(--stage-muted); }
+.mon .glow { position: absolute; inset: -3px; border-radius: 10px; border: 3px solid var(--ink); background: var(--yolk); display: grid; place-items: center; box-shadow: 0 8px 0 var(--ink); }
+.scene .mon .glow[data-at] { transform: translateY(0) scaleY(.2); transform-origin: bottom; }
+.scene .mon .glow[data-at].on { transform: translateY(-10px); }
+.mon .glow b { font-size: 26px; }
+.mon .glow span { color: var(--ink); }
+.mdetail { position: absolute; left: 40px; right: 40px; top: 214px; height: 290px; }
+.mdetail > div { position: absolute; left: 0; right: 0; top: 0; padding: 16px 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px 28px; align-content: start; }
+.mdetail > div.one { grid-template-columns: 1fr; }
+.mdetail h4 { grid-column: 1 / -1; margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 30px; }
+.mdetail h4 small { font-family: var(--f-body); font-size: 16px; color: var(--stage-muted); margin-left: 10px; }
+.mdetail .col { display: grid; gap: 7px; align-content: start; }
+.mdetail .col div { display: flex; gap: 8px; align-items: baseline; font-size: 17px; line-height: 1.35; flex-wrap: wrap; }
+.mdetail .col div.chips { gap: 6px; }
+.mdetail .col .lbl { font-weight: 900; font-size: 18px; }
+
+/* ---------- scene 7 : 15 capabilities ---------- */
+.caps { position: absolute; left: 40px; right: 40px; top: 92px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.cap { padding: 9px 12px 10px; display: grid; gap: 3px; min-height: 128px; align-content: start; }
+.cap .no { display: flex; align-items: center; gap: 8px; }
+.cap .no i { font-style: normal; font-family: var(--f-mono); font-weight: 700; font-size: 15px; background: var(--ink); color: var(--paper); border-radius: 5px; padding: 0 6px; }
+.cap .no b { font-size: 20px; }
+.cap .en { font-size: 12px; color: var(--stage-muted); font-family: var(--f-mono); line-height: 1.2; }
+.cap .do { font-size: 15px; line-height: 1.35; }
+.caps .cap:nth-child(-n+5) { background: #fdf6dd; }
+.caps .cap:nth-child(n+6):nth-child(-n+10) { background: #e6f5f5; }
+.caps .cap:nth-child(n+11) { background: #e9f0fa; }
+.zoomcard { position: absolute; left: 190px; right: 190px; top: 150px; padding: 20px 26px; z-index: 3; background: var(--panel); }
+.zoomcard h4 { margin: 0 0 4px; font-size: 26px; display: flex; align-items: center; gap: 10px; }
+.zoomcard .flow { display: flex; align-items: stretch; gap: 10px; margin-top: 14px; }
+.zoomcard .step { flex: 1; border: 3px solid var(--ink); border-radius: 12px; padding: 10px; font-size: 16px; line-height: 1.4; background: var(--teal-soft); display: grid; gap: 6px; align-content: start; }
+.zoomcard .step b { font-size: 18px; }
+.zoomcard .arrow { align-self: center; font-family: var(--f-display); font-size: 30px; }
+.zoomcard p { margin: 12px 0 0; font-size: 16px; color: var(--stage-muted); }
+
+/* ---------- scene 8 : incident ---------- */
+.scene.s-incident.alarm::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 50% 40%, rgba(229,82,63,.0), rgba(229,82,63,.28)); animation: alarm 1.1s ease-in-out infinite; pointer-events: none; }
+@keyframes alarm { 50% { opacity: .2; } }
+.clock { position: absolute; right: 40px; top: 84px; font-family: var(--f-mono); font-size: 46px; font-weight: 700; color: var(--coral); background: var(--ink); padding: 0 16px; border-radius: 10px; letter-spacing: .04em; }
+.siren { position: absolute; left: 50%; top: 92px; margin-left: -40px; width: 80px; height: 56px; background: var(--coral); border: 4px solid var(--ink); border-radius: 40px 40px 6px 6px; animation: siren .5s steps(2) infinite; }
+@keyframes siren { 50% { background: var(--yolk); } }
+.isteps { position: absolute; left: 36px; right: 36px; top: 178px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 26px; }
+.istep { position: relative; padding: 12px 12px 14px; display: grid; gap: 7px; align-content: start; min-height: 220px; }
+.istep .n { font-family: var(--f-display); font-size: 16px; color: var(--paper); background: var(--coral); border: 2px solid var(--ink); border-radius: 20px; justify-self: start; padding: 0 10px; }
+.istep b { font-size: 20px; line-height: 1.3; }
+.istep span { font-size: 15px; line-height: 1.4; color: var(--stage-muted); }
+.istep .chips { display: flex; gap: 5px; flex-wrap: wrap; }
+.istep:not(:last-child)::after { content: "→"; position: absolute; right: -24px; top: 80px; font-family: var(--f-display); font-size: 26px; }
+.motto { position: absolute; left: 50%; top: 420px; transform: translateX(-50%); font-family: var(--f-display); font-size: 32px; background: var(--yolk); border: 3px solid var(--ink); border-radius: 14px; padding: 4px 26px; box-shadow: 5px 5px 0 var(--ink); white-space: nowrap; }
+.scene .motto[data-at] { transform: translateX(-50%) scale(.6); }
+.scene .motto[data-at].on { transform: translateX(-50%); }
+
+/* ---------- scene 9 : auditor ---------- */
+.clip { position: absolute; left: 270px; top: 92px; width: 740px; padding: 40px 34px 20px; background: #fffdf6; }
+.clip::before { content: ""; position: absolute; left: 50%; top: -18px; width: 150px; height: 38px; margin-left: -75px; background: var(--stage-muted); border: 3px solid var(--ink); border-radius: 10px; }
+.clip h4 { margin: 0 0 10px; font-family: var(--f-display); font-weight: 400; font-size: 28px; }
+.clip ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 9px; counter-reset: q; }
+.clip li { counter-increment: q; display: grid; grid-template-columns: 40px 1fr; gap: 12px; align-items: center; font-size: 22px; font-weight: 700; line-height: 1.3; }
+.clip li::before { content: counter(q); width: 38px; height: 38px; border-radius: 50%; background: var(--navy); color: #fff; display: grid; place-items: center; font-family: var(--f-mono); font-size: 18px; }
+.clip li small { display: block; font-weight: 400; font-size: 15px; color: var(--stage-muted); }
+.s-audit .stamp { right: 230px; top: 380px; font-size: 36px; }
+
+/* ---------- scene 10 : value ---------- */
+.values { position: absolute; left: 40px; top: 96px; width: 720px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.val { padding: 12px 16px; display: grid; grid-template-columns: 56px 1fr; gap: 12px; align-items: start; min-height: 150px; }
+.val .ic { width: 56px; height: 56px; border-radius: 12px; border: 3px solid var(--ink); display: grid; place-items: center; font-family: var(--f-display); font-size: 26px; }
+.val b { font-size: 21px; display: block; }
+.val span { font-size: 16px; line-height: 1.45; color: var(--stage-muted); }
+.aihelp { position: absolute; left: 790px; top: 96px; width: 450px; padding: 14px 18px; background: var(--teal-soft); display: grid; gap: 8px; }
+.aihelp h4 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 24px; }
+.aihelp ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.aihelp li { font-size: 17px; line-height: 1.4; background: var(--panel); border: 2px solid var(--ink); border-radius: 10px; padding: 4px 10px; }
+.aihelp p { margin: 2px 0 0; font-size: 15px; font-weight: 700; color: var(--coral); }
+
+/* ---------- page: caption + controls ---------- */
+.caption { display: grid; grid-template-columns: 56px 1fr; gap: 12px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; min-height: 76px; }
+.caption img { width: 56px; height: 56px; object-fit: contain; border-radius: 50%; background: var(--chip); }
+.caption .who { font-size: 12px; font-weight: 700; color: var(--accent); letter-spacing: .08em; }
+.caption .txt { font-family: var(--f-display); font-size: 18px; line-height: 1.5; min-width: 0; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.btn { font: inherit; font-weight: 700; font-size: 14px; color: var(--fg); background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 7px 12px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; min-height: 38px; }
+.btn:hover { border-color: var(--accent); }
+.btn:focus-visible, .chap:focus-visible, .tab:focus-visible, .seek:focus-visible, .stage-wrap:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); min-width: 92px; justify-content: center; }
+.btn[aria-pressed="true"] { background: var(--chip); border-color: var(--accent); }
+.seek { flex: 1 1 260px; min-width: 0; height: 38px; position: relative; cursor: pointer; display: flex; align-items: center; }
+.seek .track { position: relative; width: 100%; height: 10px; background: var(--chip); border-radius: 5px; overflow: hidden; }
+.seek .fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); width: 0; }
+.seek .ticks { position: absolute; inset: 0; pointer-events: none; }
+.seek .ticks i { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--bg); }
+.time { font-family: var(--f-mono); font-size: 13px; color: var(--sub); font-variant-numeric: tabular-nums; min-width: 92px; text-align: right; }
+select.btn { appearance: auto; }
+.chapters { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.chap { font: inherit; text-align: left; background: var(--card); color: var(--fg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; cursor: pointer; display: grid; gap: 0; }
+.chap small { font-family: var(--f-mono); font-size: 11px; color: var(--sub); }
+.chap span { font-size: 14px; font-weight: 700; line-height: 1.35; }
+.chap[aria-current="true"] { border-color: var(--accent); box-shadow: inset 4px 0 0 var(--accent); }
+
+/* ---------- page: reference ---------- */
+.ref { display: grid; gap: 14px; }
+.ref h2 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 28px; text-wrap: balance; }
+.ref > p { margin: 0; color: var(--sub); max-width: 68ch; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tab { font: inherit; font-size: 14px; font-weight: 700; padding: 6px 14px; border-radius: 30px; border: 1px solid var(--line); background: var(--card); color: var(--fg); cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.reflist { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.reflist .grp { padding: 10px 16px 4px; font-weight: 900; font-size: 15px; background: var(--chip); border-top: 1px solid var(--line); }
+.reflist .grp:first-child { border-top: 0; }
+.row { display: grid; grid-template-columns: 112px minmax(0, 1fr) auto; gap: 4px 14px; padding: 9px 16px; border-top: 1px solid var(--line); align-items: baseline; }
+.row .id { font-family: var(--f-mono); font-size: 13px; color: var(--accent); font-weight: 700; }
+.row .nm { font-weight: 700; min-width: 0; }
+.row .nm small { display: block; font-weight: 400; color: var(--sub); font-size: 13px; }
+.row .must { font-size: 12px; font-weight: 700; border: 1px solid var(--accent); color: var(--accent); border-radius: 20px; padding: 0 8px; white-space: nowrap; }
+.row .adv { font-size: 12px; font-weight: 700; border: 1px solid var(--sub); color: var(--sub); border-radius: 20px; padding: 0 8px; white-space: nowrap; }
+footer.foot { border-top: 1px solid var(--line); padding-top: 14px; font-size: 13px; color: var(--sub); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 20px; }
+footer.foot b { color: var(--fg); }
+
+@media (max-width: 640px) {
+  .row { grid-template-columns: 1fr auto; }
+  .row .id { grid-column: 1 / -1; }
+  .time { min-width: 0; }
+  .stage-wrap { box-shadow: 4px 4px 0 var(--ink); border-width: 2px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rays, .pdca .wheel, .shieldwrap, .bust.talking img, .full.talking, .bp .heart, .siren, .qwheel .q.on, .caret, .scene.s-incident.alarm::before { animation: none !important; }
+  .scene [data-at], .scene, .dayline .sun { transition-duration: .01s !important; }
+}
+</style>
+
+<div class="page">
+  <header class="top">
+    <div>
+      <div class="eyebrow">ISMS 運作日常 · 動畫說明</div>
+      <h1><em>ISMS 的一年</em>：Allan 顧問 × AI 小助手阿拉蕾</h1>
+    </div>
+    <div class="by">製作：<b>Allan Lo</b>｜2026/10/16<br>依據 ISO/IEC 27001:2022・ISMS 15 項運作能力</div>
+  </header>
+
+  <section class="player" aria-label="ISMS 動畫播放器">
+    <div class="stage-wrap" id="stageWrap" tabindex="0" aria-label="動畫畫面，點一下播放或暫停">
+      <div class="stage" id="stage" data-mode="full">
+
+        <!-- 0 片頭 -->
+        <section class="scene s-title" data-id="title" data-mode="full">
+          <div class="rays"></div>
+          <img class="full" data-who="A" data-sprite="allan_full" alt="Allan 顧問" style="left:34px;height:640px">
+          <img class="full" data-who="R" data-sprite="arale_wave" alt="AI 小助手阿拉蕾" style="right:40px;height:560px">
+          <div class="titleblock" data-at="0">
+            <div class="kicker">企業資訊安全管理系統</div>
+            <h2>ISMS 的一年</h2>
+            <p>日常・每月・每季・每年，資安這樣運作</p>
+            <div class="shieldwrap"><div class="shield">ISO<br>27001</div></div>
+          </div>
+          <div class="credit" data-at="1">製作：Allan Lo｜2026/10/16</div>
+        </section>
+
+        <!-- 1 健康管理比喻 -->
+        <section class="scene" data-id="rhythm">
+          <div class="tag"><b>第 1 幕</b>ISMS 的節奏</div>
+          <div class="brand">ISMS 的一年 <i>●</i></div>
+          <div class="rhythm">
+            <div class="panel rcard d" data-at="1">
+              <div class="ico"><svg viewBox="0 0 40 40" fill="none" stroke="#1b2340" stroke-width="3" stroke-linecap="round"><circle cx="20" cy="20" r="7" fill="#f3b61f"/><path d="M20 3v5M20 32v5M3 20h5M32 20h5M8 8l3.5 3.5M28.5 28.5 32 32M8 32l3.5-3.5M28.5 11.5 32 8"/></svg></div>
+              <div class="freq">每天</div><div class="ana">像刷牙洗臉</div>
+              <div class="mean">申請單、權限、機房進出、監控告警、備份檢查</div>
+            </div>
+            <div class="panel rcard m" data-at="2">
+              <div class="ico"><svg viewBox="0 0 40 40" fill="none" stroke="#1b2340" stroke-width="3" stroke-linejoin="round"><rect x="5" y="8" width="30" height="27" rx="3" fill="#fff"/><path d="M5 15h30M13 4v8M27 4v8"/><path d="M12 24l5 5 10-10" stroke="#13939d"/></svg></div>
+              <div class="freq">每月</div><div class="ana">像量血壓</div>
+              <div class="mean">情資蒐集、日誌審查、監控報告、資安月報、KPI</div>
+            </div>
+            <div class="panel rcard q" data-at="2">
+              <div class="ico"><svg viewBox="0 0 40 40" fill="none" stroke="#1b2340" stroke-width="3" stroke-linecap="round"><path d="M33 20a13 13 0 1 1-4-9.4"/><path d="M30 4v7h-7"/></svg></div>
+              <div class="freq">每季</div><div class="ana">像回診追蹤</div>
+              <div class="mean">工作小組會議、演練與抽測、矯正追蹤</div>
+            </div>
+            <div class="panel rcard y" data-at="2">
+              <div class="ico"><svg viewBox="0 0 40 40" fill="none" stroke="#1b2340" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5v10a10 10 0 0 0 20 0V5"/><path d="M20 25v6a5 5 0 0 0 10 0v-3"/><circle cx="30" cy="25" r="3" fill="#f3b61f"/></svg></div>
+              <div class="freq">每年</div><div class="ana">像全身健檢</div>
+              <div class="mean">資產盤點、風險評鑑、BCP 演練、內稽、管審、外部稽核</div>
+            </div>
+            <div class="panel rcard e" data-at="4">
+              <div class="ico"><svg viewBox="0 0 40 40" fill="none" stroke="#1b2340" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 32V20a10 10 0 0 1 20 0v12" fill="#e5523f"/><path d="M6 33h28M20 3v4M5 10l3 2M35 10l-3 2"/></svg></div>
+              <div class="freq">不定期</div><div class="ana">像掛急診</div>
+              <div class="mean">資安事件通報、緊急應變、復原與矯正</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2 PDCA + 文件金字塔 -->
+        <section class="scene" data-id="pdca">
+          <div class="tag"><b>第 2 幕</b>PDCA 引擎與文件金字塔</div>
+          <div class="brand">ISMS 的一年 <i>●</i></div>
+          <div class="pdca" data-at="0">
+            <svg class="wheel" viewBox="0 0 200 200">
+              <g stroke="#1b2340" stroke-width="3">
+                <path d="M100 100 L100 6 A94 94 0 0 1 194 100 Z" fill="#f3b61f"/>
+                <path d="M100 100 L194 100 A94 94 0 0 1 100 194 Z" fill="#13939d"/>
+                <path d="M100 100 L100 194 A94 94 0 0 1 6 100 Z" fill="#d7e6f6"/>
+                <path d="M100 100 L6 100 A94 94 0 0 1 100 6 Z" fill="#e5523f"/>
+              </g>
+              <g font-family="Huninn, sans-serif" font-size="30" fill="#1b2340" text-anchor="middle">
+                <text x="148" y="62">P</text><text x="148" y="160" fill="#fff">D</text><text x="52" y="160">C</text><text x="52" y="62" fill="#fff">A</text>
+              </g>
+            </svg>
+            <div class="hub">ISO/IEC<br>27001<br>:2022</div>
+          </div>
+          <div class="clauses">
+            <div class="panel clause" data-at="1"><b style="background:#f3b61f">P</b><span>規劃 Plan<small>4 組織全景・5 領導・6 規劃</small></span></div>
+            <div class="panel clause" data-at="1"><b style="background:#13939d;color:#fff">D</b><span>執行 Do<small>7 支援・8 運作</small></span></div>
+            <div class="panel clause" data-at="1"><b style="background:#d7e6f6">C</b><span>檢查 Check<small>9 績效評估（量測、內稽、管審）</small></span></div>
+            <div class="panel clause" data-at="1"><b style="background:#e5523f;color:#fff">A</b><span>改善 Act<small>10 不符合與矯正、持續改善</small></span></div>
+          </div>
+          <div class="pyr">
+            <div class="layer l1" data-at="2"><div><strong>一階 手冊・SoA</strong><small>2 份</small></div></div>
+            <div class="layer l2" data-at="2"><div><strong>二階 程序書</strong><small>23 份</small></div></div>
+            <div class="layer l3" data-at="2"><div><strong>三階 作業說明書</strong><small>23 份</small></div></div>
+            <div class="layer l4" data-at="3"><div><strong>四階 表單 → 紀錄</strong><small>62 種表單＋報告範本</small></div></div>
+          </div>
+          <div class="stamp" data-at="4" style="left:730px;top:462px;font-size:28px">寫你所做・做你所寫・留下紀錄</div>
+        </section>
+
+        <!-- 3 一天 -->
+        <section class="scene" data-id="daily">
+          <div class="tag"><b>第 3 幕</b>日常與不定期作業</div>
+          <div class="brand">ISMS 的一年 <i>●</i></div>
+          <div class="dayline"><div class="bar"></div><div class="sun" id="sun" style="left:0"></div></div>
+          <div class="events">
+            <div class="panel ev" data-at="0">
+              <span class="time">09:00</span><h4>新同事報到</h4>
+              <ul><li><span class="code">L4-08</span>保密切結書</li><li><span class="code">L4-24</span>系統帳號及權限申請單</li><li><span class="code y">個資</span>個人資料使用宣告</li></ul>
+            </div>
+            <div class="panel ev" data-at="2">
+              <span class="time">11:00</span><h4>客戶要連線進來</h4>
+              <ul><li><span class="code">L4-36</span>防火牆規則使用申請單</li><li><span class="code">L4-34</span>外對內及設備連網申請表</li><li><span class="code">L4-55</span>資安列管合約清單</li></ul>
+            </div>
+            <div class="panel ev" data-at="4">
+              <span class="time">14:00</span><h4>廠商進機房保養</h4>
+              <ul><li><span class="code">L4-28</span>人員進出登記表</li><li><span class="code y">保養</span>環控設備維護紀錄（電力、UPS、消防、冷氣）</li><li><span class="code">L4-30</span>資產進出及異動紀錄</li></ul>
+            </div>
+            <div class="panel ev" data-at="6">
+              <span class="time">16:00</span><h4>系統改版・同事離職</h4>
+              <ul><li><span class="code">L4-20</span>變更申請與處理紀錄單</li><li><span class="code">L4-11</span>離職切結書＋<span class="code">L4-10</span>交接清單</li><li><span class="code">L4-31</span>設備報廢資料清除確認</li></ul>
+            </div>
+          </div>
+          <div class="panel routine" data-at="8">
+            <b>每天例行</b><span>EDR／防毒告警</span><span>備份成功與否</span><span>異常登入與日誌</span><span>主機與網路監控</span><span>系統校時</span>
+          </div>
+        </section>
+
+        <!-- 4 每月 -->
+        <section class="scene" data-id="monthly">
+          <div class="tag"><b>第 4 幕</b>每月作業</div>
+          <div class="brand">ISMS 的一年 <i>●</i></div>
+          <div class="panel calpage" data-at="0">
+            <div class="rings"><span>每月檢核</span><span>MONTHLY</span></div>
+            <ul>
+              <li data-at="1"><span class="box"></span><div>情資蒐集 <span class="code y">L4-45</span><small>資通安全網路月報（資通安全署）、SOC 報告、廠商漏洞公告</small></div></li>
+              <li data-at="2"><span class="box"></span><div>機房工作日誌與日誌審查<small>SI 監控報告、EDR 監控報告</small></div></li>
+              <li data-at="2"><span class="box"></span><div>帳號申請單、合約清單歸檔<small><span class="code">L4-24</span> <span class="code">L4-55</span></small></div></li>
+              <li data-at="3"><span class="box"></span><div>KPI 統計 <span class="code y">L4-18</span><small>ISMS 有效性評估表</small></div></li>
+              <li data-at="3"><span class="box"></span><div>資安工作月報 <span class="code t">報告D</span><small>提報主管與工作小組</small></div></li>
+            </ul>
+          </div>
+          <div class="kpis">
+            <div class="panel kpi" data-at="3" style="--off:23"><svg viewBox="0 0 120 120"><circle class="ring" cx="60" cy="60" r="46"/><circle class="val" cx="60" cy="60" r="46" stroke="#13939d"/><text x="60" y="68" text-anchor="middle">92%</text></svg><b>弱點修補完成率</b></div>
+            <div class="panel kpi" data-at="3" style="--off:6"><svg viewBox="0 0 120 120"><circle class="ring" cx="60" cy="60" r="46"/><circle class="val" cx="60" cy="60" r="46" stroke="#f3b61f"/><text x="60" y="68" text-anchor="middle">98%</text></svg><b>教育訓練完成率</b></div>
+            <div class="panel kpi" data-at="3" style="--off:0"><svg viewBox="0 0 120 120"><circle class="ring" cx="60" cy="60" r="46"/><circle class="val" cx="60" cy="60" r="46" stroke="#e5523f"/><text x="60" y="68" text-anchor="middle">100%</text></svg><b>事件處理時效</b></div>
+          </div>
+          <div class="note-ex" data-at="3">※ KPI 數值為示意，請依貴公司年度資安目標設定</div>
+          <div class="panel bp" data-at="4"><div class="heart">KPI</div><p>月報就像量血壓：數字一變，就能在問題變大之前發現它。</p></div>
+        </section>
+
+        <!-- 5 每季 + 半年 -->
+        <section class="scene" data-id="quarter">
+          <div class="tag"><b>第 5 幕</b>每季與半年作業</div>
+          <div class="brand">ISMS 的一年 <i>●</i></div>
+          <div class="qwheel" data-at="0"><div class="q on">Q1</div><div class="q on" style="animation-delay:.6s">Q2</div><div class="q on" style="animation-delay:1.2s">Q3</div><div class="q on" style="animation-delay:1.8s">Q4</div></div>
+          <div class="qlabel" data-at="0">每一季都做一次<small>讓問題不要累積到年底</small></div>
+          <span class="badge-adv" data-at="0">Allan 顧問建議加值</span>
+          <div class="qlist">
+            <div class="panel qi" data-at="1"><b>資安工作小組會議</b><span>追蹤 <span class="code t">報告A</span> 年度計畫進度</span></div>
+            <div class="panel qi" data-at="1"><b>矯正措施追蹤</b><span>未關閉的 <span class="code">L4-16</span> 逐項確認</span></div>
+            <div class="panel qi" data-at="2"><b>社交工程演練</b><span>釣魚郵件測試、點擊率統計、再教育</span></div>
+            <div class="panel qi" data-at="2"><b>備份回存抽測</b><span>抽一套系統實際還原，不只看備份成功</span></div>
+            <div class="panel qi" data-at="2"><b>弱點修補追蹤</b><span>高風險弱點的修補期限與例外核准</span></div>
+            <div class="panel qi" data-at="2"><b>供應商與雲服務檢視</b><span>SLA 達成、資安事件、合約資安條款</span></div>
+          </div>
+          <div class="panel half" data-at="4">
+            <div class="key">半年<br>6／12</div>
+            <p><b>特權帳號清查 <span class="code y">L4-27</span></b>：雲端管理帳號、核心系統 OS／AP／DB、防火牆、特權公用程式、NAS<br><b>防火牆政策與日誌檢視 <span class="code y">L4-35</span></b>：過期規則、any-any 規則、未使用規則</p>
+          </div>
+        </section>
+
+        <!-- 6 一年 -->
+        <section class="scene" data-id="year">
+          <div class="tag"><b>第 6 幕</b>十二個月的資安行事曆</div>
+          <div class="brand">ISMS 的一年 <i>●</i></div>
+          <div class="months">
+            <div class="mon"><b>1</b><span>年度目標</span><div class="glow" data-at="1" data-until="2"><b>1月</b><span>定目標</span></div></div>
+            <div class="mon"><b>2</b><span>年度清單</span><div class="glow" data-at="1" data-until="2"><b>2月</b><span>清單更新</span></div></div>
+            <div class="mon"><b>3</b><span>關注者會議</span><div class="glow" data-at="2" data-until="3"><b>3月</b><span>全景分析</span></div></div>
+            <div class="mon"><b>4</b><span>文件修訂</span><div class="glow" data-at="2" data-until="3"><b>4月</b><span>文件修訂</span></div></div>
+            <div class="mon"><b>5</b><span>資安宣導</span><div class="glow" data-at="3" data-until="4"><b>5月</b><span>全員宣導</span></div></div>
+            <div class="mon"><b>6</b><span>特權帳號</span><div class="glow" data-at="3" data-until="4"><b>6月</b><span>特權清查</span></div></div>
+            <div class="mon"><b>7</b><span>權限審查</span><div class="glow" data-at="3" data-until="4"><b>7月</b><span>權限審查</span></div></div>
+            <div class="mon"><b>8</b><span>風險評鑑</span><div class="glow" data-at="4" data-until="5"><b>8月</b><span>資產＋風評</span></div></div>
+            <div class="mon"><b>9</b><span>弱掃・供應商</span><div class="glow" data-at="4" data-until="5"><b>9月</b><span>弱掃・供應商</span></div></div>
+            <div class="mon"><b>10</b><span>BCP 演練</span><div class="glow" data-at="5" data-until="6"><b>10月</b><span>BCP 演練</span></div></div>
+            <div class="mon"><b>11</b><span>內稽・管審</span><div class="glow" data-at="5" data-until="6"><b>11月</b><span>內稽・管審</span></div></div>
+            <div class="mon"><b>12</b><span>外部稽核</span><div class="glow" data-at="6"><b>12月</b><span>外部稽核</span></div></div>
+          </div>
+          <div class="mdetail">
+            <div class="panel" data-at="0" data-until="1"><h4>從一月走到十二月<small>每個月都有主題，年底就不會一次爆量</small></h4>
+              <div class="col"><div class="lbl">上半年：定目標、盤現況</div><div>目標設定、清單更新、全景分析、文件修訂、宣導、特權清查</div></div>
+              <div class="col"><div class="lbl">下半年：評風險、驗成效</div><div>權限審查、風險評鑑、弱掃、供應商、BCP 演練、內稽、管審、外稽</div></div>
+            </div>
+            <div class="panel" data-at="1" data-until="2"><h4>1–2 月　定目標、更新年度清單</h4>
+              <div class="col"><div class="lbl">目標與計畫</div><div class="chips"><span class="code y">L4-17</span>年度資安目標設定表</div><div class="chips"><span class="code y">L4-12</span>資訊安全管理訓練計畫</div><div class="chips"><span class="code t">報告P</span>目標與績效管理計畫</div><div class="chips"><span class="code t">報告A</span>年度資安計畫與進度</div></div>
+              <div class="col"><div class="lbl">年度清單確認</div><div class="chips"><span class="code">L4-03</span><span class="code">L4-04</span><span class="code">L4-05</span><span class="code">L4-06</span><span class="code">L4-09</span><span class="code">L4-25</span><span class="code">L4-29</span><span class="code">L4-32</span><span class="code">L4-33</span><span class="code">L4-38</span><span class="code">L4-39</span><span class="code">L4-40</span><span class="code">L4-41</span><span class="code">L4-53</span><span class="code">L4-54</span></div><div>委員會名單、聯絡清冊、備份清單、機房授權、軟體清冊、金鑰憑證、組態、雲服務、法規清單、網路架構圖、安全區域佈置圖</div></div>
+            </div>
+            <div class="panel" data-at="2" data-until="3"><h4>3–4 月　看清組織全景、修訂文件</h4>
+              <div class="col"><div class="lbl">3 月 關注者（全景）會議</div><div>業務流程盤點、IT 系統使用清單</div><div class="chips"><span class="code">L4-01</span>盤點結果彙整表</div><div>關注者會議議題調查問卷、會議紀錄</div><div class="chips"><span class="code y">L4-02</span>組織全景分析表</div></div>
+              <div class="col"><div class="lbl">4 月 ISMS 文件修訂</div><div class="chips"><span class="code y">L4-00</span>資訊安全管理文件列表</div><div class="chips"><span class="code y">L4-07</span>文件修訂建議表</div><div>依去年的稽核發現、組織變動與新法規修訂程序書</div></div>
+            </div>
+            <div class="panel" data-at="3" data-until="4"><h4>5–7 月　全員宣導、清查權限</h4>
+              <div class="col"><div class="lbl">5 月 資安宣導（3 小時）</div><div>教材、簽到表、課後測驗、未上課人員統計與補課</div><div class="lbl">6 月 特權帳號清查</div><div class="chips"><span class="code y">L4-27</span>特權帳號清冊</div><div class="chips"><span class="code y">L4-35</span>防火牆政策與日誌檢視表</div></div>
+              <div class="col"><div class="lbl">7 月 一般使用者權限審查</div><div class="chips"><span class="code y">L4-26</span>權限帳號檢視紀錄單</div><div>核心系統逐一請業務主管確認：離職、調職、多餘權限都要收回</div></div>
+            </div>
+            <div class="panel" data-at="4" data-until="5"><h4>8–9 月　風險評鑑、弱點與供應商</h4>
+              <div class="col"><div class="lbl">8 月 資產盤點＋風險評鑑</div><div class="chips"><span class="code y">L4-21</span>資訊資產與風險評鑑總表</div><div class="chips"><span class="code y">L4-22</span>風險改善與機會實作計畫表</div><div class="chips"><span class="code y">L4-23</span>風險與機會評鑑報告</div></div>
+              <div class="col"><div class="lbl">9 月 弱掃・IT 課程・供應商</div><div>弱點掃描報告及處理、IT 人員資安專業課程（12 小時）</div><div class="chips"><span class="code y">L4-41</span><span class="code y">L4-42</span>雲服務清單、委外供應商評鑑</div><div class="chips"><span class="code">L4-43</span><span class="code">L4-44</span>廠商 NDA 與個人保密切結</div></div>
+            </div>
+            <div class="panel" data-at="5" data-until="6"><h4>10–11 月　演練、稽核、管理審查</h4>
+              <div class="col"><div class="lbl">10 月 營運持續演練</div><div class="chips"><span class="code y">L4-48</span><span class="code y">L4-49</span><span class="code y">L4-50</span><span class="code y">L4-51</span>BIA、BCP、演練計畫與紀錄</div><div class="chips"><span class="code y">L4-46</span><span class="code y">L4-47</span>事故通報單、緊急處理小組</div><div class="chips"><span class="code y">L4-37</span>備份資料測試紀錄單</div></div>
+              <div class="col"><div class="lbl">11 月 內部稽核＋管理審查</div><div class="chips"><span class="code y">L4-13</span><span class="code y">L4-14</span><span class="code y">L4-15</span>內稽計畫、查檢表、報告</div><div class="chips"><span class="code y">L4-16</span>矯正處理單</div><div class="chips"><span class="code t">報告C</span>管理審查報告、會議紀錄、簽到</div></div>
+            </div>
+            <div class="panel one" data-at="6"><h4>12 月　外部稽核（第三方驗證）</h4>
+              <div class="col"><div>準備外部稽核相關資料：一整年的紀錄就是最好的證據。稽核發現開立 <span class="code y">L4-16</span> 矯正處理單，並完成第二次特權帳號清查與防火牆政策檢視。</div><div class="lbl" style="color:#13939d">然後……明年一月，PDCA 再轉一圈。</div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7 15 項能力 -->
+        <section class="scene" data-id="caps">
+          <div class="tag"><b>第 7 幕</b>ISMS 的 15 項運作能力</div>
+          <div class="brand">ISMS 的一年 <i>●</i></div>
+          <div class="caps">
+            <div class="panel cap" data-at="0"><div class="no"><i>A01</i><b>治理</b></div><div class="en">Governance</div><div class="do">政策審查與公告、資安委員會</div></div>
+            <div class="panel cap" data-at="0"><div class="no"><i>A02</i><b>人資安全</b></div><div class="en">Human resource security</div><div class="do">保密切結、教育訓練、離職調職</div></div>
+            <div class="panel cap" data-at="0"><div class="no"><i>A03</i><b>資訊保護</b></div><div class="en">Information protection</div><div class="do">資料分級、DLP、個資遮罩與銷毀</div></div>
+            <div class="panel cap" data-at="0"><div class="no"><i>A04</i><b>資產管理</b></div><div class="en">Asset management</div><div class="do">資產盤點、設備進出、報廢清除</div></div>
+            <div class="panel cap" data-at="0"><div class="no"><i>A05</i><b>存取管理</b></div><div class="en">Identity &amp; access mgmt</div><div class="do">帳號權限、特權帳號、機房門禁</div></div>
+            <div class="panel cap" data-at="1"><div class="no"><i>A06</i><b>保全組態</b></div><div class="en">Secure configuration</div><div class="do">組態基準、軟體版本、憑證金鑰</div></div>
+            <div class="panel cap" data-at="1"><div class="no"><i>A07</i><b>實體安全</b></div><div class="en">Physical security</div><div class="do">安全區域、環控保養、設備管制</div></div>
+            <div class="panel cap" data-at="1"><div class="no"><i>A08</i><b>威脅與弱點</b></div><div class="en">Threat &amp; vulnerability mgmt</div><div class="do">情資蒐集、健診、弱掃、原碼檢測</div></div>
+            <div class="panel cap" data-at="1"><div class="no"><i>A09</i><b>應用程式安全</b></div><div class="en">Application security</div><div class="do">安全需求、開發測試、上線變更</div></div>
+            <div class="panel cap" data-at="1"><div class="no"><i>A10</i><b>系統與網路</b></div><div class="en">System &amp; network security</div><div class="do">防火牆、VPN、惡意軟體防護</div></div>
+            <div class="panel cap" data-at="2"><div class="no"><i>A11</i><b>供應者關係</b></div><div class="en">Supplier relationships</div><div class="do">委外評鑑、外部 IT 及雲服務</div></div>
+            <div class="panel cap" data-at="2"><div class="no"><i>A12</i><b>資安事件</b></div><div class="en">Security event mgmt</div><div class="do">日誌監控、事件通報、矯正追蹤</div></div>
+            <div class="panel cap" data-at="2"><div class="no"><i>A13</i><b>持續性</b></div><div class="en">Continuity</div><div class="do">BIA、營運持續計畫、備份備援</div></div>
+            <div class="panel cap" data-at="2"><div class="no"><i>A14</i><b>資安保證</b></div><div class="en">Information security assurance</div><div class="do">遵循性檢查、獨立審查、安全測試</div></div>
+            <div class="panel cap" data-at="2"><div class="no"><i>A15</i><b>法規遵循</b></div><div class="en">Legal &amp; compliance</div><div class="do">法規盤點、軟體版權、個資保護</div></div>
+          </div>
+          <div class="panel zoomcard" data-at="3" data-until="4">
+            <h4><span class="code">A08</span>威脅與弱點管理｜作業流程範例</h4>
+            <div class="flow">
+              <div class="step"><b>內外部情資蒐集</b>資安署月報、SOC、廠商公告<span><span class="code y">L4-45</span></span></div>
+              <div class="arrow">→</div>
+              <div class="step"><b>分析與評估</b>是否影響我們的資產？風險多高？</div>
+              <div class="arrow">→</div>
+              <div class="step"><b>採取措施</b>健診、弱點掃描、原碼檢測、修補</div>
+              <div class="arrow">→</div>
+              <div class="step"><b>回報</b>寫入資安工作月報<span><span class="code t">報告D</span></span></div>
+            </div>
+            <p>每一項能力都對應 ISO 27001 附錄 A 控制措施、TISAX ISA 要求、程序書與表單。</p>
+          </div>
+        </section>
+
+        <!-- 8 事件 -->
+        <section class="scene s-incident" data-id="incident">
+          <div class="tag"><b>第 8 幕</b>急診室：一次資安事件</div>
+          <div class="siren" data-at="0" data-until="4"></div>
+          <div class="clock" data-at="0">02:07</div>
+          <div class="isteps">
+            <div class="panel istep" data-at="0"><span class="n">偵測</span><b>EDR 告警</b><span>檔案伺服器大量檔案被改名加密，疑似勒索軟體</span></div>
+            <div class="panel istep" data-at="1"><span class="n">隔離・通報</span><b>先斷網，再通報</b><span>隔離主機、保留證據、依規定時限通報</span><div class="chips"><span class="code r">L4-46</span></div></div>
+            <div class="panel istep" data-at="2"><span class="n">應變</span><b>緊急處理小組</b><span>照名單聯絡、分工、對內對外溝通</span><div class="chips"><span class="code r">L4-47</span><span class="code">L4-05</span></div></div>
+            <div class="panel istep" data-at="3"><span class="n">復原</span><b>備份回存</b><span>依營運持續計畫，先恢復關鍵業務</span><div class="chips"><span class="code r">L4-37</span><span class="code">L4-49</span></div></div>
+            <div class="panel istep" data-at="4"><span class="n">改善</span><b>矯正與檢討</b><span>找出根因，更新風險評鑑與控制措施</span><div class="chips"><span class="code r">L4-16</span><span class="code">L4-21</span></div></div>
+          </div>
+          <div class="motto" data-at="5">平時多演練，戰時不慌亂</div>
+        </section>
+
+        <!-- 9 稽核員 -->
+        <section class="scene s-audit" data-id="audit">
+          <div class="tag"><b>第 9 幕</b>稽核員最常問的五句話</div>
+          <div class="brand">ISMS 的一年 <i>●</i></div>
+          <div class="panel clip" data-at="1">
+            <h4>Allan 稽核員的查檢表</h4>
+            <ol>
+              <li data-at="1"><div>「請給我看紀錄。」<small>表單、系統截圖、會議紀錄、簽到表</small></div></li>
+              <li data-at="1"><div>「這是誰核准的？」<small>申請、審核、核准的權責要分清楚</small></div></li>
+              <li data-at="1"><div>「多久做一次？上次是什麼時候？」<small>頻率寫在程序書，紀錄要對得上</small></div></li>
+              <li data-at="2"><div>「上次的矯正措施關閉了嗎？」<small>根因分析、改善措施、有效性確認</small></div></li>
+              <li data-at="2"><div>「你怎麼知道它有效？」<small>KPI、有效性評估、管理審查的結論</small></div></li>
+            </ol>
+          </div>
+          <div class="stamp" data-at="4">沒有紀錄 ＝ 沒有做</div>
+        </section>
+
+        <!-- 10 價值 -->
+        <section class="scene" data-id="value">
+          <div class="tag"><b>第 10 幕</b>ISMS 帶給企業的價值</div>
+          <div class="brand">ISMS 的一年 <i>●</i></div>
+          <div class="values">
+            <div class="panel val" data-at="1"><div class="ic" style="background:#fdf0c8">險</div><div><b>風險看得見</b><span>資產盤點加風險評鑑，預算和人力投在刀口上</span></div></div>
+            <div class="panel val" data-at="1"><div class="ic" style="background:#d3f0f0">信</div><div><b>客戶更信任</b><span>回應客戶稽核、供應鏈資安要求、TISAX 與合約條款</span></div></div>
+            <div class="panel val" data-at="2"><div class="ic" style="background:#d7e6f6">法</div><div><b>合法合規有依據</b><span>資通安全管理法、個資法與契約要求，都有對應紀錄</span></div></div>
+            <div class="panel val" data-at="2"><div class="ic" style="background:#fbdcd6">韌</div><div><b>營運有韌性</b><span>事件發生時知道誰做什麼，快速復原、營運不中斷</span></div></div>
+          </div>
+          <div class="panel aihelp" data-at="3">
+            <h4>阿拉蕾可以幫 ISMS 人員做什麼</h4>
+            <ul>
+              <li>每月情資摘要：哪些漏洞跟我們的資產有關</li>
+              <li>資安工作月報與管審報告的初稿</li>
+              <li>表單到期提醒：清查、演練、稽核排程</li>
+              <li>稽核前自我檢查：紀錄是否齊全</li>
+            </ul>
+            <p>判斷與核准仍由人負責，機敏資料不丟進公用 AI。</p>
+          </div>
+        </section>
+
+        <!-- 11 片尾 -->
+        <section class="scene s-end" data-id="end" data-mode="full">
+          <div class="rays"></div>
+          <img class="full" data-who="A" data-sprite="allan_full" alt="Allan 顧問" style="left:34px;height:640px">
+          <img class="full" data-who="R" data-sprite="arale_full2" alt="AI 小助手阿拉蕾" style="right:44px;height:560px">
+          <div class="titleblock" data-at="0" style="top:110px">
+            <div class="kicker">ISMS 的一年・完</div>
+            <h2 style="font-size:58px;line-height:1.2">資安不是一次性的專案<br>是每天的好習慣</h2>
+            <p>日常做紀錄・每月看數字・每季追進度・每年做體檢</p>
+          </div>
+          <div class="credit" data-at="0" style="top:448px">製作：Allan Lo｜2026/10/16</div>
+        </section>
+
+        <div class="bust allan" id="bustA"><img id="faceA" alt="Allan 顧問"><span class="nm">Allan 顧問</span></div>
+        <div class="bust arale" id="bustR"><img id="faceR" alt="阿拉蕾"><span class="nm">阿拉蕾</span></div>
+        <div class="bubble empty" id="bubble" aria-hidden="true"><span class="who" id="bubbleWho"></span><span id="bubbleText"></span></div>
+      </div>
+      <button class="playbig" id="playBig" type="button" aria-label="播放動畫"><span></span></button>
+    </div>
+
+    <div class="caption" aria-live="polite"><img id="capFace" alt=""><div style="min-width:0"><div class="who" id="capWho">按下播放開始</div><div class="txt" id="capText">Allan 顧問和 AI 小助手阿拉蕾，帶你看 ISMS 人員的一整年。</div></div></div>
+
+    <div class="controls">
+      <button class="btn" id="prev" type="button" aria-label="上一幕">◀ 上一幕</button>
+      <button class="btn primary" id="play" type="button">▶ 播放</button>
+      <button class="btn" id="next" type="button" aria-label="下一幕">下一幕 ▶</button>
+      <div class="seek" id="seek" role="slider" tabindex="0" aria-label="播放進度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="track"><div class="fill" id="fill"></div><div class="ticks" id="ticks"></div></div></div>
+      <span class="time" id="time">0:00 / 0:00</span>
+      <button class="btn" id="voice" type="button" aria-pressed="false">旁白語音：關</button>
+      <select class="btn" id="speed" aria-label="播放速度"><option value="0.8">0.8×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option></select>
+    </div>
+    <nav class="chapters" id="chapters" aria-label="章節"></nav>
+  </section>
+
+  <section class="ref" aria-labelledby="refTitle">
+    <h2 id="refTitle">ISMS 工作速查表</h2>
+    <p>動畫裡提到的作業，依頻率整理成清單，方便 ISMS 人員排程與自我檢查。「稽核必要」表示驗證稽核時一定會被要求出示的紀錄；「顧問建議」是 Allan 顧問建議額外加入的作業。</p>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="reflist" id="reflist" role="tabpanel"></div>
+  </section>
+
+  <footer class="foot">
+    <span>製作：<b>Allan Lo</b>｜2026/10/16｜角色：Allan 顧問、AI 小助手阿拉蕾</span>
+    <span>資料依據：ISMS 文件清單及每月執行紀錄建議（12 月驗證版）、ISMS 的 15 項運作能力之作業流程（2027）</span>
+  </footer>
+</div>
+
+<script>
+const SPRITES = __SPRITES__;
+
+/* ---------- script: who A = Allan, R = 阿拉蕾 ---------- */
+const SCRIPT = {
+  title: { name: "片頭", lines: [
+    ["R", "arale_cheer", "大家好！我是 AI 小助手阿拉蕾，今天要跟 Allan 顧問一起，帶大家看看 ISMS 的一年！"],
+    ["A", "allan_smile", "我是 Allan，做 ISMS 輔導，也當驗證公司的稽核員。今天不唸條文，來看大家每天真正在做的事。"],
+  ]},
+  rhythm: { name: "ISMS 的節奏", lines: [
+    ["R", "arale_confused", "Allan 顧問，ISMS 是不是拿到證書就結束了？"],
+    ["A", "allan_laugh", "哈哈，證書只是一張體檢報告。ISMS 比較像健康管理，要靠習慣來維持。"],
+    ["A", "allan_point", "每天刷牙洗臉、每月量血壓、每季回診、每年全身健檢，資安也是這個節奏。"],
+    ["R", "arale_wow", "原來如此！那如果遇到突發狀況呢？"],
+    ["A", "allan_smile", "那就是掛急診：資安事件的通報和應變。平常練好，急診時才不會手忙腳亂。"],
+  ]},
+  pdca: { name: "PDCA 與文件金字塔", lines: [
+    ["A", "allan_point", "ISMS 的骨架是 ISO 27001 的 PDCA：規劃、執行、檢查、改善，一直循環。"],
+    ["R", "arale_think", "第 4 章到第 10 章，剛好對應這四個齒輪，對吧？"],
+    ["A", "allan_smile", "對。文件像一座金字塔：最上面是手冊和適用性聲明書，往下是 23 份程序書和 23 份作業說明書。"],
+    ["A", "allan_point", "最底層是 62 種表單。稽核員看的就是這一層，表單填了，才有紀錄可以證明。"],
+    ["R", "arale_thumb", "我懂了：寫你所做、做你所寫，還要留下紀錄！"],
+  ]},
+  daily: { name: "日常與不定期", lines: [
+    ["R", "arale_cheer", "來看 ISMS 人員的一天！早上九點，新同事報到。"],
+    ["A", "allan_smile", "先簽保密切結書，再依職務申請帳號。最小權限原則：用多少，開多少。"],
+    ["R", "arale_wow", "十一點，業務說客戶要連線進來，要開防火牆！"],
+    ["A", "allan_point", "填申請單、主管核准，還要設到期日。開了沒關的規則，常常是稽核發現事項。"],
+    ["R", "arale_explain", "下午兩點，廠商來機房保養冷氣和 UPS。"],
+    ["A", "allan_smile", "要有人陪同、登記進出，設備帶出去也要記錄。機房是公司的心臟。"],
+    ["R", "arale_think", "四點，系統要改版，又有同事要離職了……"],
+    ["A", "allan_wink", "變更要先評估、留好回復計畫；離職當天停帳號、收設備、辦交接。"],
+    ["R", "arale_thumb", "除了這些，每天還要看 EDR 告警、確認備份成功、留意異常登入！"],
+  ]},
+  monthly: { name: "每月作業", lines: [
+    ["R", "arale_explain", "每個月，ISMS 小組都要完成一份資安工作月報。"],
+    ["A", "allan_point", "第一步是情資蒐集：資安署的網路月報、SOC 報告、廠商漏洞公告，記到情資管理表。"],
+    ["R", "arale_think", "再來整理機房工作日誌、做日誌審查，還有 SI 和 EDR 的監控報告。"],
+    ["A", "allan_smile", "最後用有效性評估表統計 KPI，例如修補完成率、訓練完成率、事件處理時效。"],
+    ["R", "arale_wow", "月報就像量血壓，數字一變，就能提早發現問題！"],
+  ]},
+  quarter: { name: "每季與半年", lines: [
+    ["A", "allan_point", "清單上主要是每月和每年的工作。我建議再加一個每季的節奏，問題才不會累積到年底。"],
+    ["R", "arale_explain", "每一季開一次資安工作小組會議，追蹤年度計畫和矯正措施！"],
+    ["A", "allan_smile", "還可以做社交工程演練、備份回存抽測、弱點修補追蹤，再檢視供應商和雲服務。"],
+    ["R", "arale_wow", "那半年要做什麼呢？"],
+    ["A", "allan_point", "六月和十二月，清查特權帳號，再檢視防火牆政策和日誌。"],
+    ["R", "arale_thumb", "特權帳號就像萬能鑰匙，一定要定期點名！"],
+  ]},
+  year: { name: "十二個月行事曆", lines: [
+    ["R", "arale_cheer", "接下來是重頭戲：ISMS 的十二個月！"],
+    ["A", "allan_point", "一、二月定目標、排訓練計畫，並更新委員會名單、備份清單、軟體清冊、雲服務和法規清單。"],
+    ["R", "arale_explain", "三月開關注者會議，盤點業務流程、做組織全景分析；四月修訂文件。"],
+    ["A", "allan_smile", "五月全員資安宣導三小時；六、七月清查特權帳號、防火牆政策和一般使用者權限。"],
+    ["R", "arale_think", "八月資產盤點加風險評鑑；九月弱點掃描、IT 人員專業課程，還有供應商評鑑。"],
+    ["A", "allan_wink", "十月做營運持續演練，順便測備份回存；十一月內部稽核和管理審查。"],
+    ["R", "arale_cheer", "十二月，外部稽核！驗證公司的稽核員要來了！"],
+    ["A", "allan_laugh", "那時候，我就換戴另一頂帽子囉。"],
+  ]},
+  caps: { name: "15 項運作能力", lines: [
+    ["A", "allan_point", "ISMS 不只是文件，要變成企業的 15 項運作能力，也對應 ISO 27001 附錄 A 和 TISAX。"],
+    ["R", "arale_wow", "治理、人資安全、資訊保護、資產管理、存取管理……"],
+    ["A", "allan_smile", "還有組態、實體、威脅與弱點、應用程式、系統網路、供應者、事件、持續性、保證和法遵。"],
+    ["R", "arale_thumb", "每項能力都有作業流程、表單和程序書，Excel 裡都對好了！"],
+    ["A", "allan_smile", "能力建起來，換人接手也能照著做，這就是制度的價值。"],
+  ]},
+  incident: { name: "一次資安事件", lines: [
+    ["R", "arale_cry", "糟了！凌晨兩點，EDR 告警：檔案伺服器疑似被勒索軟體加密！"],
+    ["A", "allan_wow", "別慌，照劇本走：先隔離主機、保留證據，再填事故通報處理單。"],
+    ["R", "arale_explain", "緊急處理小組名單上的人，都聯絡到了！"],
+    ["A", "allan_point", "接著從備份回存。還好十月演練時才測過，回存很順利。"],
+    ["R", "arale_thumb", "最後開矯正處理單、找出根因，再更新風險評鑑。"],
+    ["A", "allan_smile", "平常每月、每年做的那些事，就是為了這一刻。"],
+  ]},
+  audit: { name: "稽核員的五句話", lines: [
+    ["R", "arale_confused", "Allan 顧問，你當稽核員的時候，都問些什麼？"],
+    ["A", "allan_wink", "我最常問三句：請給我看紀錄、這是誰核准的、多久做一次。"],
+    ["A", "allan_point", "再加兩句：上次的矯正措施關閉了嗎？你怎麼知道它有效？"],
+    ["R", "arale_wow", "所以每月的 KPI 和管理審查，就是最後一題的答案！"],
+    ["A", "allan_laugh", "沒錯！記住一句話：沒有紀錄，就等於沒有做。"],
+  ]},
+  value: { name: "ISMS 的價值", lines: [
+    ["A", "allan_smile", "對管理者來說，ISMS 帶來四個價值。"],
+    ["R", "arale_explain", "第一，風險看得見，預算花在刀口上；第二，客戶和供應鏈更信任我們。"],
+    ["A", "allan_point", "第三，法規和合約要求都有依據；第四，出事時能快速復原，營運不中斷。"],
+    ["R", "arale_cheer", "還有我這個 AI 小助手，可以幫忙整理情資、起草月報、提醒到期的表單！"],
+    ["A", "allan_smile", "AI 能幫忙整理，但判斷和核准還是要靠人。工具會換，好習慣要留下來。"],
+  ]},
+  end: { name: "片尾", lines: [
+    ["R", "arale_cheer", "ISMS 的一年之旅就到這裡，謝謝大家！"],
+    ["A", "allan_smile", "有任何問題，歡迎找我和阿拉蕾。我們下次見！"],
+  ]},
+};
+const NAMES = { A: "Allan 顧問", R: "阿拉蕾" };
+const LISTEN = { A: "allan_smile", R: "arale_thumb" };
+
+/* ---------- timeline ---------- */
+const stage = document.getElementById("stage");
+const sceneEls = [...stage.querySelectorAll(".scene")];
+const lineDur = t => 1.6 + [...t].length * 0.17;
+let total = 0;
+const scenes = sceneEls.map((el, i) => {
+  const s = SCRIPT[el.dataset.id];
+  const lines = s.lines.map(([w, f, t]) => { const l = { w, f, t, start: total, dur: lineDur(t) }; total += l.dur; return l; });
+  total += 0.6; // breath between scenes
+  return { el, i, name: s.name, mode: el.dataset.mode || "bust", lines, start: lines[0].start, end: total,
+           steps: [...el.querySelectorAll("[data-at]")].map(n => ({ n, at: +n.dataset.at, until: n.dataset.until == null ? Infinity : +n.dataset.until })) };
+});
+
+for (const img of document.querySelectorAll("[data-sprite]")) img.src = SPRITES[img.dataset.sprite];
+
+let T = 0, playing = false, rate = 1, curS = -1, curL = -2;
+const $ = id => document.getElementById(id);
+const bubble = $("bubble"), bubbleText = $("bubbleText"), bubbleWho = $("bubbleWho");
+
+function locate(t) {
+  let si = scenes.findIndex(s => t < s.end); if (si < 0) si = scenes.length - 1;
+  const s = scenes[si];
+  let li = -1;
+  for (let k = 0; k < s.lines.length; k++) if (t >= s.lines[k].start) li = k;
+  if (li < 0) li = 0;
+  return { si, li };
+}
+const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+
+function faceFor(s, li, who) {
+  for (let k = li; k >= 0; k--) if (s.lines[k].w === who) return s.lines[k].f;
+  return LISTEN[who];
+}
+
+function render() {
+  const { si, li } = locate(T);
+  const s = scenes[si];
+  if (si !== curS) {
+    sceneEls.forEach((el, k) => el.classList.toggle("active", k === si));
+    stage.dataset.mode = s.mode;
+    chapBtns.forEach((b, k) => b.setAttribute("aria-current", k === si ? "true" : "false"));
+    curS = si; curL = -2;
+  }
+  if (li !== curL) {
+    curL = li;
+    const L = s.lines[li];
+    for (const st of s.steps) st.n.classList.toggle("on", li >= st.at && li < st.until);
+    if (s.el.dataset.id === "incident") s.el.classList.toggle("alarm", li < 4);
+    if (s.el.dataset.id === "daily") { const pos = [0, 0, 27, 27, 54, 54, 80, 80, 96][li] ?? 96; $("sun").style.left = pos + "%"; }
+    $("faceA").src = SPRITES[faceFor(s, li, "A")];
+    $("faceR").src = SPRITES[faceFor(s, li, "R")];
+    $("bustA").classList.toggle("talking", L.w === "A" && playing);
+    $("bustR").classList.toggle("talking", L.w === "R" && playing);
+    s.el.querySelectorAll(".full").forEach(f => f.classList.toggle("talking", f.dataset.who === L.w && playing));
+    bubble.className = "bubble " + (L.w === "A" ? "allan" : "arale");
+    bubbleWho.textContent = NAMES[L.w];
+    $("capFace").src = SPRITES[L.f];
+    $("capWho").textContent = NAMES[L.w] + "｜" + s.name;
+    $("capText").textContent = L.t;
+    if (playing && voiceOn) speak(L);
+  }
+  const L = s.lines[li];
+  const chars = [...L.t];
+  const n = playing || T > L.start ? Math.min(chars.length, Math.floor((T - L.start) * 22) + 1) : chars.length;
+  bubbleText.innerHTML = "";
+  bubbleText.append(chars.slice(0, Math.max(n, 1)).join(""));
+  if (n < chars.length) { const c = document.createElement("span"); c.className = "caret"; bubbleText.append(c); }
+  $("fill").style.width = (T / total * 100) + "%";
+  $("seek").setAttribute("aria-valuenow", Math.round(T / total * 100));
+  $("time").textContent = `${fmt(T)} / ${fmt(total)}`;
+}
+
+/* ---------- voice (optional) ---------- */
+let voiceOn = false, speaking = false, uttId = 0, zhVoice = null;
+const synth = window.speechSynthesis;
+function pickVoice() {
+  try {
+    const vs = synth.getVoices();
+    zhVoice = vs.find(v => /zh[-_]TW/i.test(v.lang)) || vs.find(v => /zh[-_](HK|Hant)/i.test(v.lang)) || vs.find(v => /^zh/i.test(v.lang)) || null;
+  } catch (e) { zhVoice = null; }
+}
+if (synth) { pickVoice(); try { synth.onvoiceschanged = pickVoice; } catch (e) {} }
+function speak(L) {
+  if (!synth) return;
+  try {
+    synth.cancel();
+    const u = new SpeechSynthesisUtterance(L.t);
+    u.lang = zhVoice ? zhVoice.lang : "zh-TW"; if (zhVoice) u.voice = zhVoice;
+    u.pitch = L.w === "R" ? 1.45 : 0.85; u.rate = Math.min(2, 1.08 * rate);
+    const id = ++uttId; speaking = true;
+    u.onend = u.onerror = () => { if (id === uttId) speaking = false; };
+    synth.speak(u);
+  } catch (e) { speaking = false; }
+}
+function hush() { speaking = false; uttId++; try { synth && synth.cancel(); } catch (e) {} }
+
+/* ---------- clock ---------- */
+let last = performance.now();
+function tick(now) {
+  const dt = Math.min(0.25, (now - last) / 1000); last = now;
+  if (playing) {
+    const { si, li } = locate(T);
+    const L = scenes[si].lines[li];
+    let next = T + dt * rate;
+    const lineEnd = L.start + L.dur;
+    if (voiceOn && speaking && next >= lineEnd) next = lineEnd - 0.001;
+    T = next;
+    if (T >= total) { T = total - 0.001; setPlaying(false); }
+    render();
+  }
+  requestAnimationFrame(tick);
+}
+function setPlaying(p) {
+  playing = p;
+  $("play").textContent = p ? "❚❚ 暫停" : "▶ 播放";
+  $("playBig").hidden = p;
+  if (!p) hush();
+  curL = -2; render();
+}
+function seekTo(t) { T = Math.max(0, Math.min(total - 0.001, t)); hush(); curL = -2; render(); }
+
+/* ---------- controls ---------- */
+const chapBox = $("chapters");
+const chapBtns = scenes.map((s, k) => {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "chap";
+  b.innerHTML = `<small>${k === 0 ? "片頭" : k === scenes.length - 1 ? "片尾" : "第 " + k + " 幕"} · ${fmt(s.start)}</small><span></span>`;
+  b.querySelector("span").textContent = s.name;
+  b.addEventListener("click", () => { seekTo(s.start); if (!playing) setPlaying(true); });
+  chapBox.append(b);
+  return b;
+});
+$("ticks").innerHTML = scenes.slice(1).map(s => `<i style="left:${s.start / total * 100}%"></i>`).join("");
+$("play").addEventListener("click", () => {
+  if (!playing && T >= total - 0.01) T = 0;
+  setPlaying(!playing);
+});
+$("playBig").addEventListener("click", e => { e.stopPropagation(); if (T >= total - 0.01) T = 0; setPlaying(true); });
+$("stageWrap").addEventListener("click", () => setPlaying(!playing));
+$("prev").addEventListener("click", () => { const { si } = locate(T); const s = scenes[si]; seekTo(T - s.start > 2 || si === 0 ? s.start : scenes[si - 1].start); });
+$("next").addEventListener("click", () => { const { si } = locate(T); if (si < scenes.length - 1) seekTo(scenes[si + 1].start); });
+const seekEl = $("seek");
+function seekFromEvent(e) { const r = seekEl.getBoundingClientRect(); seekTo((e.clientX - r.left) / r.width * total); }
+seekEl.addEventListener("pointerdown", e => { seekFromEvent(e); seekEl.setPointerCapture(e.pointerId); });
+seekEl.addEventListener("pointermove", e => { if (e.buttons) seekFromEvent(e); });
+seekEl.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") { seekTo(T + 5); e.preventDefault(); }
+  if (e.key === "ArrowLeft") { seekTo(T - 5); e.preventDefault(); }
+});
+$("speed").addEventListener("change", e => { rate = +e.target.value; });
+$("voice").addEventListener("click", () => {
+  voiceOn = !voiceOn;
+  $("voice").setAttribute("aria-pressed", String(voiceOn));
+  $("voice").textContent = "旁白語音：" + (voiceOn ? "開" : "關");
+  if (!synth && voiceOn) $("voice").textContent = "此瀏覽器不支援語音";
+  if (voiceOn && playing) { const { si, li } = locate(T); speak(scenes[si].lines[li]); } else hush();
+});
+$("stageWrap").addEventListener("keydown", e => {
+  if (e.key === " " || e.key === "Enter") { e.preventDefault(); setPlaying(!playing); }
+  if (e.key === "ArrowRight") $("next").click();
+  if (e.key === "ArrowLeft") $("prev").click();
+});
+
+/* stage scaling */
+const wrap = $("stageWrap");
+function fit() { stage.style.setProperty("--s", wrap.clientWidth / 1280); }
+new ResizeObserver(fit).observe(wrap); fit();
+const mq = window.matchMedia("(max-width: 640px)");
+function narrow() { bubble.style.display = mq.matches ? "none" : ""; }
+mq.addEventListener ? mq.addEventListener("change", narrow) : mq.addListener(narrow); narrow();
+
+render();
+requestAnimationFrame(tick);
+
+/* ---------- reference worklist ---------- */
+const Y = 1, ADV = 2;
+const REF = {
+  "日常・不定期": [
+    ["人員", [["L4-08", "保密切結書", "新進員工", Y], ["L4-11", "離職切結書", "離職員工"], ["L4-10", "文件與資訊資產交接清單", "離職、轉調員工"], ["—", "個人資料使用宣告", "應徵者、員工、訪客"]]],
+    ["帳號與連線", [["L4-24", "系統帳號及權限申請單", "新進、轉調員工（每月歸檔）"], ["L4-34", "外對內及設備連網使用申請表", "廠商或外部設備連線內部網路"], ["L4-36", "防火牆安全控管規則使用申請單", "防火牆規則變更"]]],
+    ["機房與設備", [["L4-28", "人員進出登記表", "未授權人員進出機房", Y], ["L4-30", "資訊資產進出及異動紀錄表", "須保護之設備離開安全區域"], ["—", "網通設備保養／維護紀錄", "網通設備保養"], ["—", "環控系統設備保養／維護紀錄", "電力、UPS、消防、冷氣"], ["L4-31", "設備報廢資料清除確認單", "含硬碟設備報廢"]]],
+    ["變更與系統開發", [["L4-19", "組織業務流程變更風險評估表", "組織或業務流程變動影響資安風險"], ["L4-20", "變更申請與處理紀錄單", "軟硬體設定變更、作業系統版更"], ["L4-56", "資料庫資料異動申請單", "直接修改資料庫資料"], ["L4-52", "安全要求事項表", "內外部專案啟動、系統安全要求識別"], ["L4-57", "系統測試資料申請單", "以正式資料做系統測試"], ["L4-58", "應用系統維護申請單", "系統維護需求"], ["L4-59", "新系統開發需求評估單", "新系統需求"], ["L4-60", "系統分析文件確認單", "新系統需求"], ["L4-61", "系統開發測試及上線紀錄單", "系統上線測試"]]],
+    ["合約、事件與文件", [["L4-55", "資安列管合約清單", "客戶、廠商合約資安要求識別", Y], ["L4-46", "資通安全事故通報處理單", "資安事件發生時", Y], ["L4-16", "矯正處理單", "不符合事項、事件後檢討"], ["L4-07", "文件修訂建議表", "文件有修訂需求"]]],
+  ],
+  "每天例行": [
+    ["監控與檢查", [["—", "EDR／防毒告警處理", "每日", ADV], ["—", "備份作業成功確認", "每日", ADV], ["—", "異常登入與重要日誌檢視", "每日", ADV], ["—", "主機與網路監控、系統校時", "每日", ADV]]],
+  ],
+  "每月": [
+    ["情資蒐集", [["L4-45", "資訊安全情資管理表", "每月情資蒐集", Y], ["—", "資通安全網路月報（資通安全署）", "每月情資蒐集"], ["—", "SOC 報告", "每月情資蒐集"]]],
+    ["網路監控與日誌監控", [["—", "機房工作日誌（含日誌審查）", "每月資安月報"], ["—", "SI 監控報告", "每月資安月報"], ["—", "EDR 監控報告", "每月資安月報"], ["報告D", "資安工作月報", "每月資安月報"]]],
+    ["ISMS 量測", [["L4-18", "ISMS 有效性評估表", "每月 KPI 統計", Y]]],
+  ],
+  "每季": [
+    ["Allan 顧問建議", [["報告A", "資安工作小組會議・年度計畫進度追蹤", "每季", ADV], ["L4-16", "矯正措施關閉狀況追蹤", "每季", ADV], ["—", "社交工程演練（釣魚郵件測試）", "每季或每半年", ADV], ["L4-37", "備份回存抽測", "每季抽一套系統", ADV], ["—", "高風險弱點修補追蹤", "每季", ADV], ["L4-41", "供應商 SLA 與雲服務檢視", "每季", ADV]]],
+  ],
+  "半年": [
+    ["6 月／12 月", [["L4-27", "特權帳號清冊", "雲端管理帳號、核心系統 OS／AP／DB、防火牆、特權公用程式、NAS", Y], ["L4-35", "防火牆政策與日誌檢視表", "防火牆政策審核", Y]]],
+  ],
+  "每年（依月份）": [
+    ["1 月 年度資料確認", [["L4-17", "年度資安目標設定表", "年度資安目標設定", Y], ["L4-12", "資訊安全管理訓練計畫", "年度資安教育訓練計畫", Y]]],
+    ["2 月 年度資料確認", [["報告P", "ISMS 目標與績效管理計畫", "年度 ISMS 目標及行動方案"], ["報告A", "年度資安計畫與進度", "年度資安工作事項展開"], ["L4-03", "資訊安全委員會人員名單", "委員會名單確認", Y], ["L4-04", "內外部連絡清冊", "內外部聯絡清單確認", Y], ["L4-05", "溝通規劃表", "重大資安事項溝通方式", Y], ["L4-06", "人員角色權責及職能需求表", "資安人員職能角色", Y], ["L4-09", "敏感職務清單", "機密等級 4 之職務"], ["L4-25", "備份清單", "所有備份計畫", Y], ["L4-29", "機房授權人員名單", "可進出機房人員", Y], ["L4-32", "版權軟體清冊", "合法版權軟體", Y], ["L4-33", "核准安裝之版權與免費軟體清單", "允許安裝之軟體", Y], ["L4-38", "金鑰憑證管理紀錄表", "金鑰憑證清單", Y], ["L4-39", "組態安全管理表", "核心系統組態", Y], ["L4-40", "內部網路 SLA 一覽表", "各部門網路 SLA 要求"], ["L4-41", "外部 IT 及雲服務清單", "使用之外部 IT 及雲服務", Y], ["L4-53", "外來文件一覽表", "法律法規盤點", Y], ["L4-54", "資安參考法規清單", "法律法規盤點", Y], ["—", "安全區域佈置圖", "辦公室安全區域", Y], ["—", "網路架構圖、拓樸圖", "辦公室網路架構", Y]]],
+    ["3 月 關注者（全景）會議", [["—", "業務流程（專案流程）盤點", "業務流程資訊資產識別"], ["—", "IT 系統使用清單", "IT 管理的系統清冊"], ["L4-01", "業務流程及資通訊系統盤點結果彙整表", "關注者會議使用"], ["—", "關注者會議議題調查問卷", "關注者會議使用", Y], ["—", "關注者會議紀錄", "關注者會議使用", Y], ["L4-02", "組織全景分析表", "全景分析作業", Y]]],
+    ["4 月 ISMS 文件修訂", [["L4-00", "資訊安全管理文件列表", "文件一覽表及版本清單", Y], ["L4-07", "文件修訂建議表", "文件修訂提出時", Y]]],
+    ["5 月 資安宣導", [["—", "教育訓練教材", "年度資安宣導（3 小時）"], ["—", "教育訓練簽到表", "年度資安宣導"], ["—", "未上課人員統計", "年度資安宣導"]]],
+    ["6 月 特權帳號清查・防火牆政策審查", [["L4-27", "特權帳號清冊", "核心系統特權帳號清查", Y], ["L4-35", "防火牆政策與日誌檢視表", "防火牆政策審核", Y]]],
+    ["7 月 一般使用者權限審查", [["L4-26", "權限帳號檢視紀錄單", "核心系統一般使用者權限清查", Y]]],
+    ["8 月 資訊資產盤點・風險評鑑", [["L4-21", "資訊資產與風險評鑑總表", "年度資產盤點與風險評鑑", Y], ["L4-22", "風險改善與機會實作計畫表", "風險處理", Y], ["L4-23", "風險與機會評鑑報告", "風險評鑑結果", Y]]],
+    ["9 月 弱點掃描・資訊人員課程・供應商", [["—", "弱掃報告及處理", "弱掃實施及處理"], ["—", "專業課程上課證明、簽到表", "IT 人員資安專業課程（12 小時）"], ["L4-41", "外部 IT 及雲服務清單", "供應商安全管理", Y], ["L4-42", "委外供應商評鑑表", "評鑑供應商資安能力", Y], ["L4-43", "NDA 保密切結書（廠商）", "需接觸機敏資料之廠商"], ["L4-44", "保密切結書（廠商個人）", "需接觸機敏資料之廠商人員"]]],
+    ["10 月 營運持續演練", [["L4-48", "營運衝擊分析表", "BIA", Y], ["L4-49", "營運持續計畫", "BCP", Y], ["L4-50", "營運持續演練計畫", "年度演練計畫", Y], ["L4-51", "營運持續演練紀錄表", "年度演練紀錄", Y], ["L4-46", "資通安全事故通報處理單", "演練過程紀錄", Y], ["L4-47", "資安事故緊急處理小組名單", "演練檢討", Y], ["L4-37", "備份資料測試紀錄單", "備份回存測試", Y], ["—", "緊急應變 SOP", "核心系統異常回復"], ["L4-16", "矯正處理單", "演練檢討"]]],
+    ["11 月 內部稽核・管理審查", [["L4-13", "ISMS 內部稽核計畫", "年度內部稽核", Y], ["L4-14", "ISMS 內部稽核查檢表", "年度內部稽核", Y], ["L4-15", "ISMS 內部稽核報告", "年度內部稽核", Y], ["L4-16", "矯正處理單", "稽核發現改善", Y], ["報告C", "管理審查報告", "年度管理審查", Y], ["—", "管理審查會議紀錄、簽到", "年度管理審查", Y]]],
+    ["12 月 外部稽核", [["—", "外部稽核相關資料", "第三方驗證稽核"], ["L4-16", "矯正處理單", "外部稽核發現改善"], ["L4-27", "特權帳號清冊（第二次）", "半年清查", Y], ["L4-35", "防火牆政策與日誌檢視表（第二次）", "半年審查", Y]]],
+  ],
+};
+const tabs = $("tabs"), list = $("reflist");
+const tabNames = Object.keys(REF);
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function showTab(name) {
+  [...tabs.children].forEach(b => b.setAttribute("aria-selected", String(b.dataset.k === name)));
+  list.innerHTML = REF[name].map(([g, rows]) =>
+    `<div class="grp">${esc(g)}</div>` + rows.map(([id, nm, when, flag]) =>
+      `<div class="row"><span class="id">${esc(id.startsWith("L4") ? "ISMS-" + id : id)}</span><span class="nm">${esc(nm)}<small>${esc(when)}</small></span>${flag === Y ? '<span class="must">稽核必要</span>' : flag === ADV ? '<span class="adv">顧問建議</span>' : "<span></span>"}</div>`
+    ).join("")
+  ).join("");
+  try { localStorage.setItem("isms-ref-tab", name); } catch (e) {}
+}
+tabNames.forEach(n => {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "tab"; b.setAttribute("role", "tab"); b.dataset.k = n; b.textContent = n;
+  b.addEventListener("click", () => showTab(n));
+  tabs.append(b);
+});
+let saved = null; try { saved = localStorage.getItem("isms-ref-tab"); } catch (e) {}
+showTab(tabNames.includes(saved) ? saved : tabNames[0]);
+</script>
