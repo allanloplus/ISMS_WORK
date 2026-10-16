@@ -1,0 +1,767 @@
+<title>ISMS 資安小鎮</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="遊戲式互動地圖：點選建築，跟著 Allan 顧問與 AI 小助手阿拉蕾認識 ISMS 的日常、每月、每季與每年工作。製作：Allan Lo，2026/10/16">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: a game screen. HUD (mode, month, frequency, readiness) above a scaled 1280x760 top-down town map;
+   a quest window slides over the map's right side on wide screens and drops below it on phones.
+   The town keeps one bright storybook look in both themes; page chrome follows the viewer's theme. */
+:root {
+  /* town world */
+  --ink: #1d2742;
+  --road: #8e9ab3;
+  --road-line: #f3f6fb;
+  --grass: #a9db8f;
+  --tree: #4fb86a;
+  --sky-tint: rgba(255, 255, 255, 0);
+  --gold: #ffc53d;
+  --alert: #ff5a5f;
+  /* frequency colours (shared legend) */
+  --f-day: #19a7a0; --f-adhoc: #f2734f; --f-month: #e3a400; --f-quarter: #8e63e8; --f-half: #2f8fd8; --f-year: #3f9e3a;
+
+  /* page chrome */
+  --bg: #eef3f1; --fg: #1b2440; --sub: #586380; --line: #cdd6e3; --card: #ffffff; --accent: #11808a; --accent-ink: #ffffff; --chip: #e4eaf3; --soft: #f5f8fb;
+  --f-display: "Huninn", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --f-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #10162a; --fg: #e8ecf6; --sub: #a3adc7; --line: #2b3657; --card: #182039; --accent: #3cc6cf; --accent-ink: #0b1222; --chip: #232e4f; --soft: #1d2643; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #10162a; --fg: #e8ecf6; --sub: #a3adc7; --line: #2b3657; --card: #182039; --accent: #3cc6cf; --accent-ink: #0b1222; --chip: #232e4f; --soft: #1d2643; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 15px; line-height: 1.6; }
+.page { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 22px 48px; display: grid; gap: 14px; }
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 24px; }
+header.top .eyebrow { font-size: 12px; letter-spacing: .14em; color: var(--sub); font-weight: 700; }
+header.top h1 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: clamp(28px, 4.4vw, 42px); line-height: 1.15; }
+header.top h1 em { font-style: normal; color: var(--accent); }
+header.top .by { font-size: 13px; color: var(--sub); text-align: right; }
+header.top .by b { color: var(--fg); }
+
+/* ---------- HUD ---------- */
+.hud { display: grid; gap: 8px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; }
+.hud .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.hud .lbl { font-size: 12px; font-weight: 900; color: var(--sub); letter-spacing: .08em; min-width: 34px; }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.seg button, .pill { font: inherit; font-size: 13.5px; font-weight: 700; color: var(--fg); background: var(--soft); border: 1px solid var(--line); border-radius: 20px; padding: 3px 11px; cursor: pointer; min-height: 32px; display: inline-flex; align-items: center; gap: 6px; }
+.seg button i { width: 9px; height: 9px; border-radius: 50%; }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.seg.months button { min-width: 40px; justify-content: center; padding-inline: 6px; }
+.seg button:focus-visible, .pill:focus-visible, .qcard input:focus-visible, .x:focus-visible, .dlg button:focus-visible, .loglist button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.ready { margin-left: auto; display: flex; align-items: center; gap: 10px; min-width: 220px; flex: 0 1 300px; }
+.ready .bar { flex: 1; height: 12px; border-radius: 6px; background: var(--chip); overflow: hidden; }
+.ready .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--f-year), var(--gold)); transition: width .5s; }
+.ready span { font-size: 13px; font-weight: 700; white-space: nowrap; }
+.ready b { font-family: var(--f-mono); }
+.flows { display: flex; flex-wrap: wrap; gap: 6px; }
+.flows[hidden] { display: none !important; }
+
+/* ---------- game area ---------- */
+.game { position: relative; }
+.stage-wrap { position: relative; width: 100%; max-width: 100%; aspect-ratio: 1280 / 760; overflow: hidden; border-radius: 16px; border: 3px solid var(--ink); background: var(--grass); box-shadow: 0 10px 30px rgba(20, 40, 60, .2); }
+.stage { position: absolute; left: 0; top: 0; width: 1280px; height: 760px; transform-origin: 0 0; transform: scale(var(--s, .5)); }
+.stage svg { position: absolute; inset: 0; width: 1280px; height: 760px; }
+.stage text { font-family: var(--f-body); }
+.bld { cursor: pointer; transition: opacity .4s; }
+.bld .body { transition: transform .2s; transform-box: fill-box; transform-origin: 50% 100%; }
+.bld:hover .body, .bld:focus .body { transform: translateY(-5px); }
+.bld:focus { outline: none; }
+.bld:focus-visible .plate { stroke: var(--gold); stroke-width: 5; }
+.bld.dim { opacity: .45; }
+.bld.here .plate { stroke: var(--gold); stroke-width: 5; }
+.sign { font-size: 21px; font-weight: 900; fill: var(--ink); }
+.spin { animation: spin 6s linear infinite; transform-box: fill-box; transform-origin: center; }
+.spin.slow { animation-duration: 14s; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.blink { animation: blink 1.4s steps(2) infinite; }
+@keyframes blink { 50% { opacity: .15; } }
+.wave { animation: wave 1.6s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 0 50%; }
+@keyframes wave { to { transform: skewY(-10deg) scaleX(.9); } }
+.swing { animation: swing 2.4s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 0; }
+@keyframes swing { from { transform: rotate(-12deg); } to { transform: rotate(12deg); } }
+.cloud { animation: drift linear infinite; }
+@keyframes drift { from { transform: translateX(-300px); } to { transform: translateX(1500px); } }
+.routeline { fill: none; stroke-width: 12; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 2 22; animation: march 1s linear infinite; }
+@keyframes march { to { stroke-dashoffset: -24; } }
+
+.walker { position: absolute; transform-origin: 50% 100%; pointer-events: none; filter: drop-shadow(0 6px 4px rgba(0, 0, 0, .25)); }
+.walker img { display: block; height: 100%; transform: scaleX(var(--dir, 1)); }
+.walker.walk img { animation: step .32s ease-in-out infinite alternate; }
+@keyframes step { from { translate: 0 0; rotate: -3deg; } to { translate: 0 -6px; rotate: 3deg; } }
+.marker { position: absolute; transform: translate(-50%, -100%); pointer-events: none; display: flex; align-items: center; gap: 4px; font-family: var(--f-mono); font-weight: 700; font-size: 20px; color: var(--ink); background: #fff; border: 3px solid var(--ink); border-radius: 18px; padding: 0 10px 0 4px; box-shadow: 0 4px 0 var(--ink); animation: hop 1s ease-in-out infinite alternate; transition: opacity .3s; }
+.marker b { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-family: var(--f-display); font-size: 22px; background: var(--alert); color: #fff; }
+.marker.key b { background: var(--gold); color: var(--ink); }
+.marker[hidden] { display: none !important; }
+@keyframes hop { to { transform: translate(-50%, calc(-100% - 8px)); } }
+.pin { position: absolute; transform: translate(-50%, -50%); width: 38px; height: 38px; border-radius: 50%; background: var(--ink); color: #fff; font-family: var(--f-mono); font-weight: 700; font-size: 19px; display: grid; place-items: center; border: 3px solid #fff; pointer-events: none; }
+.pin.done { background: var(--f-year); }
+.pin.cur { background: var(--gold); color: var(--ink); animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 10px rgba(255, 197, 61, .35); } }
+.alarm { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(circle at 37% 48%, transparent 30%, rgba(255, 60, 70, .45)); }
+.alarm.on { animation: alarmf 1s ease-in-out 3; }
+@keyframes alarmf { 50% { opacity: 1; } }
+.snow { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 1s;
+  background-image: radial-gradient(#fff 1.6px, transparent 2px), radial-gradient(#fff 1.2px, transparent 1.6px); background-size: 90px 90px, 140px 140px; animation: fall 9s linear infinite; }
+.snow.on { opacity: .85; }
+@keyframes fall { to { background-position: 30px 90px, -40px 140px; } }
+
+/* dialogue box (not scaled: readable on phones) */
+.dlg { position: absolute; left: 12px; bottom: 12px; z-index: 5; width: min(560px, calc(100% - 24px)); background: #fffdf6; color: #1d2742; border: 3px solid #1d2742; border-radius: 16px; box-shadow: 0 6px 0 #1d2742; padding: 10px 12px; display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; align-items: start; z-index: 5; }
+.dlg[hidden] { display: none !important; }
+.dlg img { width: 64px; height: 64px; object-fit: contain; border-radius: 12px; background: #e9f3f2; }
+.dlg .nm { font-size: 12px; font-weight: 900; color: #11808a; letter-spacing: .06em; }
+.dlg .nm.A { color: #2b3f78; }
+.dlg .tx { font-family: var(--f-display); font-size: 17px; line-height: 1.5; min-height: 50px; }
+.dlg .acts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.dlg .acts button { font: inherit; font-size: 13.5px; font-weight: 700; border-radius: 18px; padding: 3px 14px; border: 2px solid #1d2742; background: #fff; color: #1d2742; cursor: pointer; min-height: 34px; }
+.dlg .acts button.go { background: #ffc53d; }
+.toast { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); z-index: 6; background: #1d2742; color: #fff; font-weight: 700; font-size: 15px; border-radius: 22px; padding: 6px 18px; box-shadow: 0 6px 20px rgba(0,0,0,.25); white-space: nowrap; animation: toastIn .4s cubic-bezier(.2,1.5,.4,1); max-width: calc(100% - 24px); overflow: hidden; text-overflow: ellipsis; }
+.toast[hidden] { display: none !important; }
+@keyframes toastIn { from { transform: translateX(-50%) translateY(-30px); opacity: 0; } }
+
+/* quest window */
+.quest { position: absolute; right: 12px; top: 12px; bottom: 12px; width: min(400px, 46%); background: var(--card); color: var(--fg); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 8px 0 var(--ink); display: grid; grid-template-rows: auto auto minmax(0, 1fr); overflow: hidden; z-index: 4; }
+.quest[hidden] { display: none !important; }
+.game.qleft .quest { right: auto; left: 12px; }
+.game.qleft .dlg { left: auto; right: 12px; }
+.quest .qh { padding: 12px 14px 8px; display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 10px; align-items: center; border-bottom: 1px solid var(--line); }
+.quest .emb { width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; font-family: var(--f-display); font-size: 22px; color: #fff; border: 3px solid var(--ink); }
+.quest h2 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 24px; line-height: 1.2; }
+.quest .caps { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+.quest .caps span { font-size: 11.5px; font-weight: 700; background: var(--chip); border-radius: 10px; padding: 0 7px; }
+.quest .caps span b { font-family: var(--f-mono); }
+.x { font: inherit; font-size: 20px; line-height: 1; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: var(--soft); color: var(--fg); cursor: pointer; }
+.quest .qtabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px 14px; border-bottom: 1px solid var(--line); }
+.quest .qtabs button { font: inherit; font-size: 12.5px; font-weight: 700; border: 1px solid var(--line); border-radius: 16px; padding: 1px 9px; background: var(--soft); color: var(--fg); cursor: pointer; min-height: 30px; display: inline-flex; align-items: center; gap: 5px; }
+.quest .qtabs button i { width: 8px; height: 8px; border-radius: 50%; }
+.quest .qtabs button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.quest .qbody { overflow-y: auto; padding: 10px 14px 14px; display: grid; gap: 8px; align-content: start; }
+.qcard { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 8px; align-items: start; background: var(--soft); border: 1px solid var(--line); border-left: 6px solid; border-radius: 12px; padding: 8px 10px; }
+.qcard.now { box-shadow: 0 0 0 2px var(--gold); }
+.qcard input { width: 22px; height: 22px; margin: 2px 0 0; accent-color: var(--f-year); cursor: pointer; }
+.qcard.done .qn { text-decoration: line-through; color: var(--sub); }
+.qcard .qn { font-weight: 700; line-height: 1.35; }
+.qcard .qm { display: flex; flex-wrap: wrap; gap: 4px 8px; font-size: 12px; color: var(--sub); margin-top: 2px; align-items: center; }
+.qcard code { font-family: var(--f-mono); font-size: 12px; font-weight: 700; color: var(--accent); }
+.qcard .must { font-weight: 700; color: var(--alert); border: 1px solid var(--alert); border-radius: 10px; padding: 0 6px; }
+.qcard .adv { font-weight: 700; border: 1px solid var(--sub); border-radius: 10px; padding: 0 6px; }
+.qcard .when { font-weight: 700; color: var(--fg); }
+.qempty { color: var(--sub); font-size: 14px; }
+.qnote { font-size: 13px; color: var(--sub); background: var(--chip); border-radius: 10px; padding: 8px 10px; }
+
+/* below */
+.below { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; min-width: 0; }
+.panel h2 { margin: 0 0 4px; font-family: var(--f-display); font-weight: 400; font-size: 22px; }
+.panel > p { margin: 0 0 10px; color: var(--sub); font-size: 14px; }
+.loglist { display: grid; gap: 10px; }
+.loglist .grp h3 { margin: 0 0 3px; font-size: 14px; }
+.loglist .grp h3 button { font: inherit; font-weight: 900; background: none; border: 0; color: var(--accent); cursor: pointer; padding: 0; }
+.loglist ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.loglist li { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 8px; align-items: baseline; font-size: 14px; }
+.loglist li i { width: 9px; height: 9px; border-radius: 50%; }
+.loglist li code { font-family: var(--f-mono); font-size: 12px; color: var(--accent); white-space: nowrap; }
+.howto { display: grid; gap: 8px; font-size: 14px; }
+.howto b { color: var(--accent); }
+.badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.badges span { font-size: 12.5px; font-weight: 700; border: 1px dashed var(--line); color: var(--sub); border-radius: 16px; padding: 2px 10px; }
+.badges span.got { border: 1px solid var(--f-year); color: var(--fg); background: var(--chip); }
+footer.foot { border-top: 1px solid var(--line); padding-top: 14px; font-size: 13px; color: var(--sub); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 20px; }
+footer.foot b { color: var(--fg); }
+footer.foot a { color: var(--accent); }
+
+@media (max-width: 860px) {
+  .quest { position: static; width: auto; margin-top: 12px; max-height: none; box-shadow: 0 4px 0 var(--ink); }
+  .quest .qbody { overflow: visible; }
+  .below { grid-template-columns: 1fr; }
+  .ready { margin-left: 0; flex: 1 1 100%; }
+  .dlg { position: static; width: auto; margin-top: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin, .blink, .wave, .swing, .cloud, .routeline, .walker.walk img, .marker, .pin.cur, .alarm.on, .snow, .toast { animation: none !important; }
+}
+</style>
+
+<div class="page">
+  <header class="top">
+    <div>
+      <div class="eyebrow">ISMS 運作日常 · 遊戲式互動地圖</div>
+      <h1><em>ISMS 資安小鎮</em>：跟著阿拉蕾逛一圈</h1>
+    </div>
+    <div class="by">製作：<b>Allan Lo</b>｜2026/10/16<br>角色：Allan 顧問、AI 小助手阿拉蕾</div>
+  </header>
+
+  <div class="hud" aria-label="遊戲控制">
+    <div class="row">
+      <span class="lbl">模式</span>
+      <div class="seg" id="modeSeg">
+        <button type="button" data-mode="town" aria-pressed="true">逛小鎮</button>
+        <button type="button" data-mode="flow" aria-pressed="false">流程路線</button>
+      </div>
+      <div class="ready" title="勾選任務卡累積">
+        <span>稽核準備度</span><div class="bar"><i id="readyBar"></i></div><span><b id="readyNum">0</b> / <b id="readyTot">0</b></span>
+      </div>
+      <button class="pill" id="sound" type="button" aria-pressed="true">聲音：開</button>
+    </div>
+    <div class="row"><span class="lbl">月份</span><div class="seg months" id="monthSeg"></div></div>
+    <div class="row"><span class="lbl">頻率</span><div class="seg" id="freqSeg"></div></div>
+    <div class="row flows" id="flowRow" hidden><span class="lbl">流程</span><div class="flows" id="flowSeg"></div></div>
+  </div>
+
+  <div class="game" id="game">
+    <div class="stage-wrap" id="wrap">
+      <div class="stage" id="stage">
+        <svg id="world" viewBox="0 0 1280 760" aria-label="ISMS 資安小鎮地圖"></svg>
+        <div id="overlay"></div>
+        <div class="walker" id="allan" style="width:56px;height:96px"><img alt="Allan 顧問"></div>
+        <div class="walker" id="arale" style="width:52px;height:86px"><img alt="阿拉蕾"></div>
+        <div class="snow" id="snow"></div>
+        <div class="alarm" id="alarm"></div>
+      </div>
+      <div class="toast" id="toast" hidden></div>
+    </div>
+    <div class="dlg" id="dlg" role="dialog" aria-live="polite">
+      <img id="dlgFace" alt="">
+      <div><div class="nm" id="dlgName"></div><div class="tx" id="dlgText"></div></div>
+      <div class="acts" id="dlgActs"></div>
+    </div>
+    <section class="quest" id="quest" hidden aria-labelledby="qTitle">
+      <div class="qh"><div class="emb" id="qEmb"></div><div><h2 id="qTitle"></h2><div class="caps" id="qCaps"></div></div><button class="x" id="qClose" type="button" aria-label="關閉任務視窗">×</button></div>
+      <div class="qtabs" id="qTabs"></div>
+      <div class="qbody" id="qBody"></div>
+    </section>
+  </div>
+
+  <div class="below">
+    <section class="panel" aria-labelledby="logTitle">
+      <h2 id="logTitle">任務日誌</h2>
+      <p id="logSub">依上方的月份與頻率，列出全鎮的 ISMS 工作。點建築名稱就會走過去。</p>
+      <div class="loglist" id="loglist"></div>
+    </section>
+    <section class="panel" aria-labelledby="howTitle">
+      <h2 id="howTitle">怎麼玩</h2>
+      <div class="howto">
+        <div><b>逛小鎮</b>：點任一棟建築，阿拉蕾會走過去，Allan 顧問跟在後面。到了以後會說明那裡的 ISMS 工作，並打開任務卡。</div>
+        <div><b>月份・頻率</b>：選月份或頻率，有任務的建築會冒出 <b>!</b>；金色的 <b>★</b> 表示這個月有每年、半年或每季的重點工作。</div>
+        <div><b>流程路線</b>：選一條流程，地圖會畫出路線。按「下一步」，角色就會沿著部門一站一站走完。</div>
+        <div><b>稽核準備度</b>：在任務卡打勾，準備度就會上升，還能拿到徽章。勾選紀錄只存在這台瀏覽器。</div>
+      </div>
+      <div class="badges" id="badges"></div>
+    </section>
+  </div>
+
+  <footer class="foot">
+    <span>製作：<b>Allan Lo</b>｜2026/10/16｜角色：Allan 顧問、AI 小助手阿拉蕾</span>
+    <span>資料依據：ISMS 文件清單及每月執行紀錄建議（12 月驗證版）、ISMS 的 15 項運作能力之作業流程（2027）；每季作業為顧問建議</span>
+    <span>其他版本：<a href="https://claude.ai/artifact/F9GKBTktpy39ckmyTM1up7" target="_blank" rel="noopener">ISMS 的一年（劇情動畫）</a>・<a href="https://claude.ai/artifact/4pJ6AzqokneGFPqzgc7U9y" target="_blank" rel="noopener">ISMS 工作地圖</a></span>
+  </footer>
+</div>
+
+<script>
+const SPRITES = __SPRITES__;
+const AUDIO = __AUDIO__;
+
+/* ================= voice lines: id: [who, face, text] ================= */
+const LINES = {
+  welcome1: ["R", "arale_cheer", "歡迎來到 ISMS 資安小鎮！點任何一棟建築，我就會走過去，告訴你那裡有哪些 ISMS 工作。"],
+  welcome2: ["A", "allan_smile", "上面可以選月份和工作頻率，有任務的建築會冒出驚嘆號。也可以切到流程路線，看工作怎麼在部門之間流動。"],
+  hq: ["A", "allan_smile", "這裡是我的顧問辦公室。一年的 ISMS 從這裡出發：一月訂目標，二月確認委員會和年度計畫。"],
+  hr: ["R", "arale_explain", "人資大樓管人的資安：新人簽保密切結、離職要交接，五月全員宣導，九月還有 IT 人員專業課程！"],
+  it: ["A", "allan_point", "IT 服務台每天都在處理申請：帳號權限、防火牆規則、系統變更。每一張都要核准，也要留下紀錄。"],
+  soc: ["R", "arale_cheer", "歡迎來到資安指揮中心！我們每天看 EDR 告警和日誌，每個月整理情資和 KPI，寫成資安工作月報。"],
+  dc: ["A", "allan_point", "機房是公司的心臟。進出要登記、保養要記錄，備份每天確認，十月還要實際回存測試。"],
+  dev: ["R", "arale_explain", "開發工坊負責系統開發。專案一開始就要列出安全需求，測試、上線、改資料庫，都要有申請單喔！"],
+  lib: ["A", "allan_smile", "文件圖書館放著一到四階文件。四月修訂文件，法規清單每年更新，合約的資安要求也在這裡列管。"],
+  sup: ["R", "arale_wow", "這裡是供應商港口！雲服務清單要更新，九月評鑑供應商，接觸機敏資料的廠商要簽保密協議。"],
+  risk: ["A", "allan_point", "風險研究所負責盤點和評估。三月盤點業務流程，八月做資產盤點和風險評鑑，再訂出改善計畫。"],
+  hall: ["R", "arale_cheer", "會議廳開過好多重要會議：三月關注者會議、每季工作小組會議，還有十一月的管理審查！"],
+  audit: ["A", "allan_wink", "稽核所是我最熟悉的地方。十一月內部稽核、十二月外部稽核。記住：沒有紀錄，就等於沒有做。"],
+  bcp: ["R", "arale_explain", "演練廣場！十月做營運持續演練：分析營運衝擊、啟動應變小組，還要真的把備份還原回來。"],
+  f_onboard: ["R", "arale_cheer", "新同事報到囉！跟著我從人資大樓走到 IT 服務台，最後把紀錄歸檔。"],
+  f_offboard: ["A", "allan_point", "同事離職時，帳號當天停用、設備收回、文件交接，一樣都不能少。"],
+  f_change: ["R", "arale_explain", "系統要改版了！從開發工坊提出，IT 評估核准，到機房上線，最後歸檔。"],
+  f_incident: ["A", "allan_wow", "每天的監控如果發現異常，就啟動事件流程：通報、應變、復原，最後矯正並更新風險。"],
+  f_monthly: ["R", "arale_thumb", "每個月，指揮中心把情資和 KPI 整理成月報，送到會議廳給主管看。"],
+  f_pdca: ["A", "allan_smile", "這是一年一圈的 PDCA：訂目標、評風險、做訓練和演練、內部稽核、管理審查，最後是外部稽核。"],
+  f_supplier: ["R", "arale_explain", "供應商管理：先更新清單、做評鑑，再簽保密協議，合約的資安要求也要列管。"],
+};
+const NAMES = { A: "Allan 顧問", R: "阿拉蕾" };
+
+/* ================= frequency ================= */
+const FQ = {
+  day: ["每天", "var(--f-day)"], adhoc: ["不定期", "var(--f-adhoc)"], month: ["每月", "var(--f-month)"],
+  quarter: ["每季", "var(--f-quarter)"], half: ["半年", "var(--f-half)"], year: ["每年", "var(--f-year)"],
+};
+const FKEYS = ["day", "adhoc", "month", "quarter", "half", "year"];
+const CAPN = { A01: "治理", A02: "人資安全", A03: "資訊保護", A04: "資產管理", A05: "存取管理", A06: "保全組態", A07: "實體安全", A08: "威脅與弱點", A09: "應用程式安全", A10: "系統與網路", A11: "供應者關係", A12: "資安事件", A13: "持續性", A14: "資安保證", A15: "法規遵循" };
+
+/* ================= buildings & quests =================
+   q: [freq, months (year only), name, code, 使用時機, flags]  flags: "M" 稽核必要, "V" 顧問建議 */
+const BLD = {
+  hq:    { n: "顧問辦公室", x: 480, y: 105, row: "top", col: "#2b3f78", roof: "#4a63b0", g: "顧", caps: ["A01"], q: [
+    ["year", [1], "年度資安目標設定表", "L4-17", "年度資安目標設定", "M"],
+    ["year", [2], "ISMS 目標與績效管理計畫", "報告P", "年度 ISMS 目標及行動方案", ""],
+    ["year", [2], "年度資安計畫與進度", "報告A", "年度資安工作事項展開", ""],
+    ["year", [2], "資訊安全委員會人員名單", "L4-03", "委員會名單確認", "M"],
+    ["year", [2], "溝通規劃表", "L4-05", "重大資安事項溝通方式", "M"]] },
+  hr:    { n: "人資大樓", x: 160, y: 105, row: "top", col: "#d9586a", roof: "#f28c8c", g: "人", caps: ["A02", "A03"], q: [
+    ["adhoc", 0, "保密切結書", "L4-08", "新進員工到職", "M"],
+    ["adhoc", 0, "個人資料使用宣告", "個資宣告", "應徵者、員工、訪客", ""],
+    ["adhoc", 0, "離職切結書", "L4-11", "員工離職", ""],
+    ["adhoc", 0, "文件與資訊資產交接清單", "L4-10", "離職或轉調", ""],
+    ["year", [1], "資訊安全管理訓練計畫", "L4-12", "年度教育訓練規劃", "M"],
+    ["year", [2], "人員角色權責及職能需求表", "L4-06", "資安人員職能角色", "M"],
+    ["year", [2], "敏感職務清單", "L4-09", "機密等級 4 之職務", ""],
+    ["year", [5], "全員資安宣導（3 小時）", "簽到・測驗", "教材、簽到表、未上課人員統計", ""],
+    ["year", [9], "IT 人員資安專業課程（12 小時）", "上課證明", "IT 專業人員資安課程", ""],
+    ["quarter", 0, "社交工程演練", "演練報告", "釣魚郵件測試、點擊率統計", "V"]] },
+  lib:   { n: "文件圖書館", x: 800, y: 105, row: "top", col: "#8a5a2b", roof: "#c98a4b", g: "書", caps: ["A01", "A15"], q: [
+    ["adhoc", 0, "文件修訂建議表", "L4-07", "文件有修訂需求時", ""],
+    ["adhoc", 0, "資安列管合約清單", "L4-55", "客戶、廠商合約資安要求識別（每月歸檔）", "M"],
+    ["year", [2], "外來文件一覽表", "L4-53", "法律法規盤點", "M"],
+    ["year", [2], "資安參考法規清單", "L4-54", "法律法規盤點", "M"],
+    ["year", [4], "資訊安全管理文件列表", "L4-00", "文件一覽表及版本清單", "M"],
+    ["year", [4], "ISMS 文件修訂", "L4-07", "依稽核發現、組織變動、新法規修訂", "M"],
+    ["year", [12], "個人資料銷毀紀錄", "銷毀紀錄", "逾期個資銷毀", ""]] },
+  sup:   { n: "供應商港口", x: 1120, y: 105, row: "top", col: "#1f7aa8", roof: "#4fb0de", g: "港", caps: ["A11"], q: [
+    ["year", [2], "外部 IT 及雲服務清單", "L4-41", "公司使用的外部 IT 及雲服務", "M"],
+    ["year", [9], "委外供應商評鑑表", "L4-42", "評鑑供應商的資安能力", "M"],
+    ["year", [9], "NDA 保密切結書（廠商）", "L4-43", "需接觸機敏資料的廠商", ""],
+    ["year", [9], "保密切結書（廠商個人）", "L4-44", "需接觸機敏資料的廠商人員", ""],
+    ["quarter", 0, "供應商 SLA 與雲服務檢視", "L4-41", "SLA 達成、資安事件、合約條款", "V"]] },
+  it:    { n: "IT 服務台", x: 160, y: 370, row: "mid", col: "#2e8b57", roof: "#5cc08a", g: "IT", caps: ["A05", "A06", "A10"], q: [
+    ["adhoc", 0, "系統帳號及權限申請單", "L4-24", "新進、轉調員工（每月歸檔）", ""],
+    ["adhoc", 0, "防火牆安全控管規則使用申請單", "L4-36", "防火牆規則變更", ""],
+    ["adhoc", 0, "外對內及設備連網使用申請表", "L4-34", "廠商或外部設備連線內網", ""],
+    ["adhoc", 0, "變更申請與處理紀錄單", "L4-20", "軟硬體設定變更、作業系統版更", ""],
+    ["adhoc", 0, "組織業務流程變更風險評估表", "L4-19", "組織或業務流程變動影響資安風險", ""],
+    ["half", 0, "特權帳號清冊", "L4-27", "6 月、12 月：雲端、OS／AP／DB、防火牆、NAS", "M"],
+    ["half", 0, "防火牆政策與日誌檢視表", "L4-35", "6 月、12 月：防火牆政策審核", "M"],
+    ["year", [2], "版權軟體清冊・核准安裝軟體清單", "L4-32・33", "合法軟體與允許安裝清單", "M"],
+    ["year", [2], "金鑰憑證管理紀錄表", "L4-38", "公司金鑰憑證清單", "M"],
+    ["year", [2], "組態安全管理表", "L4-39", "核心系統組態清單", "M"],
+    ["year", [2], "內部網路 SLA 一覽表・網路架構圖", "L4-40", "各部門網路 SLA、網路拓樸", "M"],
+    ["year", [7], "權限帳號檢視紀錄單", "L4-26", "核心系統一般使用者權限清查", "M"]] },
+  soc:   { n: "資安指揮中心", x: 480, y: 370, row: "mid", col: "#1d2742", roof: "#3a4a7a", g: "SOC", caps: ["A12", "A08", "A10"], q: [
+    ["day", 0, "EDR／防毒告警檢視", "機房工作日誌", "每個工作日", ""],
+    ["day", 0, "異常登入與系統日誌檢視", "機房工作日誌", "每個工作日", ""],
+    ["day", 0, "主機與網路監控、系統校時", "監控畫面", "每個工作日", ""],
+    ["month", 0, "資訊安全情資管理表", "L4-45", "資安署網路月報、SOC 報告、廠商公告", "M"],
+    ["month", 0, "日誌審查・SI／EDR 監控報告", "監控報告", "每月資安月報素材", ""],
+    ["month", 0, "ISMS 有效性評估表（KPI）", "L4-18", "每月 KPI 統計", "M"],
+    ["month", 0, "資安工作月報", "報告D", "每月提報主管", ""],
+    ["adhoc", 0, "資通安全事故通報處理單", "L4-46", "資安事件發生時", "M"],
+    ["year", [2], "內外部連絡清冊", "L4-04", "內部及外部聯絡清單確認", "M"],
+    ["year", [9], "弱點掃描報告及處理", "弱掃報告", "年度弱掃實施與修補", ""],
+    ["quarter", 0, "高風險弱點修補追蹤", "追蹤表", "修補期限與例外核准", "V"]] },
+  dc:    { n: "機房", x: 800, y: 370, row: "mid", col: "#5b6b8c", roof: "#8696b8", g: "機", caps: ["A07", "A13", "A04"], q: [
+    ["day", 0, "備份作業成功確認", "備份紀錄", "每個工作日", ""],
+    ["adhoc", 0, "人員進出登記表", "L4-28", "未授權人員進出機房", "M"],
+    ["adhoc", 0, "資訊資產進出及異動紀錄表", "L4-30", "設備離開安全區域", ""],
+    ["adhoc", 0, "網通設備保養／維護紀錄", "保養紀錄", "網通設備保養", ""],
+    ["adhoc", 0, "環控設備保養（電力、UPS、消防、冷氣）", "保養紀錄", "環控系統保養維護", ""],
+    ["adhoc", 0, "設備報廢資料清除確認單", "L4-31", "含硬碟設備報廢", ""],
+    ["year", [2], "機房授權人員名單", "L4-29", "可進出機房人員", "M"],
+    ["year", [2], "備份清單", "L4-25", "所有備份計畫", "M"],
+    ["year", [2], "安全區域佈置圖", "自由格式", "辦公室安全區域", "M"],
+    ["year", [10], "備份資料測試紀錄單", "L4-37", "演練時的備份回存測試", "M"],
+    ["quarter", 0, "備份回存抽測", "L4-37", "每季抽一套系統實際還原", "V"]] },
+  dev:   { n: "開發工坊", x: 1120, y: 370, row: "mid", col: "#b8641e", roof: "#f0a04b", g: "開", caps: ["A09"], q: [
+    ["adhoc", 0, "安全要求事項表", "L4-52", "內外部專案啟動、系統安全需求", ""],
+    ["adhoc", 0, "新系統開發需求評估單", "L4-59", "新系統需求", ""],
+    ["adhoc", 0, "系統分析文件確認單", "L4-60", "新系統分析", ""],
+    ["adhoc", 0, "系統測試資料申請單", "L4-57", "以正式資料測試", ""],
+    ["adhoc", 0, "系統開發測試及上線紀錄單", "L4-61", "系統上線測試", ""],
+    ["adhoc", 0, "應用系統維護申請單", "L4-58", "系統維護需求", ""],
+    ["adhoc", 0, "資料庫資料異動申請單", "L4-56", "直接修改資料庫資料", ""]] },
+  risk:  { n: "風險研究所", x: 160, y: 645, row: "bot", col: "#7a3fa0", roof: "#b07ad6", g: "險", caps: ["A04", "A01"], q: [
+    ["year", [3], "業務流程盤點・IT 系統使用清單", "L4-01", "業務流程資訊資產識別", ""],
+    ["year", [3], "關注者會議議題調查問卷", "問卷", "關注者會議前調查", "M"],
+    ["year", [8], "資訊資產與風險評鑑總表", "L4-21", "年度資產盤點與風險評鑑", "M"],
+    ["year", [8], "風險改善與機會實作計畫表", "L4-22", "風險處理計畫", "M"],
+    ["year", [8], "風險與機會評鑑報告", "L4-23", "風險評鑑結果", "M"]] },
+  hall:  { n: "會議廳", x: 480, y: 645, row: "bot", col: "#a0522d", roof: "#d98b5f", g: "會", caps: ["A01"], q: [
+    ["year", [3], "關注者會議紀錄", "會議紀錄", "關注者（全景）會議", "M"],
+    ["year", [3], "組織全景分析表", "L4-02", "全景分析作業", "M"],
+    ["year", [11], "管理審查報告", "報告C", "年度管理審查", "M"],
+    ["year", [11], "管理審查會議紀錄・簽到", "會議紀錄", "年度管理審查", "M"],
+    ["quarter", 0, "資安工作小組會議", "報告A", "追蹤年度計畫進度與矯正措施", "V"]] },
+  audit: { n: "稽核所", x: 800, y: 645, row: "bot", col: "#3c5a99", roof: "#6f8fd6", g: "稽", caps: ["A14"], q: [
+    ["year", [11], "ISMS 內部稽核計畫", "L4-13", "年度內部稽核", "M"],
+    ["year", [11], "ISMS 內部稽核查檢表", "L4-14", "年度內部稽核", "M"],
+    ["year", [11], "ISMS 內部稽核報告", "L4-15", "年度內部稽核", "M"],
+    ["year", [11, 12], "矯正處理單", "L4-16", "內稽、外稽發現的改善", "M"],
+    ["year", [12], "外部稽核相關資料", "稽核資料", "第三方驗證稽核", ""],
+    ["quarter", 0, "矯正措施關閉追蹤", "L4-16", "逐項確認未關閉的矯正單", "V"]] },
+  bcp:   { n: "演練廣場", x: 1120, y: 645, row: "bot", col: "#c0392b", roof: "#ef6f5e", g: "練", caps: ["A13", "A12"], q: [
+    ["year", [10], "營運衝擊分析表", "L4-48", "公司 BIA", "M"],
+    ["year", [10], "營運持續計畫", "L4-49", "BCP", "M"],
+    ["year", [10], "營運持續演練計畫", "L4-50", "年度演練計畫", "M"],
+    ["year", [10], "營運持續演練紀錄表", "L4-51", "年度演練紀錄", "M"],
+    ["year", [10], "演練：事故通報處理單", "L4-46", "演練過程紀錄", "M"],
+    ["year", [10], "資安事故緊急處理小組名單", "L4-47", "演練檢討", "M"],
+    ["year", [10], "緊急應變 SOP", "自由格式", "核心系統異常回復", ""]] },
+};
+const ORDER = ["hq", "hr", "lib", "sup", "it", "soc", "dc", "dev", "risk", "hall", "audit", "bcp"];
+
+/* ================= flows ================= */
+const FLOWS = {
+  onboard: { n: "新人到職", c: "#f2734f", line: "f_onboard", steps: [
+    ["hr", "簽保密切結書、個資使用宣告", "L4-08"], ["it", "依職務申請系統帳號，最小權限原則", "L4-24"], ["lib", "申請單每月歸檔，保留稽核證據", "歸檔"]] },
+  offboard: { n: "人員離職", c: "#d9586a", line: "f_offboard", steps: [
+    ["hr", "離職切結書、文件與資訊資產交接清單", "L4-11・10"], ["it", "離職當天停用帳號、收回權限", "L4-24"], ["dc", "收回設備；含資料的設備報廢要清除", "L4-31"], ["lib", "交接與停用紀錄歸檔", "歸檔"]] },
+  change: { n: "系統變更", c: "#b8641e", line: "f_change", steps: [
+    ["dev", "提出維護或開發需求，列出安全要求", "L4-58・52"], ["it", "變更風險評估與主管核准", "L4-20"], ["dc", "上線並保留回復計畫", "L4-61"], ["lib", "變更紀錄歸檔", "歸檔"]] },
+  incident: { n: "監控與資安事件", c: "#ff5a5f", line: "f_incident", alarm: true, steps: [
+    ["dc", "主機、網路、備份系統產生日誌與告警", "日誌"], ["soc", "每日檢視告警；確認異常就通報", "L4-46"], ["bcp", "緊急處理小組應變，從備份回存", "L4-47・37"], ["audit", "找出根因、開立矯正處理單", "L4-16"], ["risk", "把事件結果回饋到風險評鑑", "L4-21"]] },
+  monthly: { n: "每月月報", c: "#e3a400", line: "f_monthly", steps: [
+    ["dc", "機房工作日誌、日誌審查", "日誌"], ["soc", "情資蒐集、監控報告、KPI 統計", "L4-45・18"], ["hall", "資安工作月報提報主管", "報告D"]] },
+  pdca: { n: "年度 PDCA", c: "#3f9e3a", line: "f_pdca", steps: [
+    ["hq", "1–2 月：目標、訓練計畫、年度清單", "L4-17・12"], ["hall", "3 月：關注者會議、組織全景分析", "L4-02"], ["hr", "5 月全員資安宣導（9 月再上 IT 專業課程）", "簽到"], ["risk", "8 月：資產盤點與風險評鑑", "L4-21・22"], ["bcp", "10 月：營運持續演練", "L4-50・51"], ["audit", "11 月：內部稽核", "L4-13～15"], ["hall", "11 月：管理審查", "報告C"], ["audit", "12 月：外部稽核，明年再轉一圈", "L4-16"]] },
+  supplier: { n: "供應商管理", c: "#1f7aa8", line: "f_supplier", steps: [
+    ["sup", "更新外部 IT 及雲服務清單、委外供應商評鑑", "L4-41・42"], ["it", "外部連線申請、帳號開通", "L4-34"], ["lib", "廠商 NDA、合約資安要求列管", "L4-43・55"]] },
+};
+
+/* ================= road graph ================= */
+const RY = [200, 540], RX = [320, 640, 960];
+const NODES = {};
+const EDGES = {};
+function node(x, y) { const k = x + "," + y; if (!NODES[k]) { NODES[k] = [x, y]; EDGES[k] = []; } return k; }
+function link(a, b) { EDGES[a].push(b); EDGES[b].push(a); }
+const xs = [40, 160, 320, 480, 640, 800, 960, 1120, 1240];
+RY.forEach(y => { for (let i = 1; i < xs.length; i++) link(node(xs[i - 1], y), node(xs[i], y)); });
+RX.forEach(x => link(node(x, 200), node(x, 540)));
+for (const [id, b] of Object.entries(BLD)) {
+  const road = b.row === "top" ? 200 : 540;
+  const doorY = b.row === "top" ? 232 : b.row === "mid" ? 522 : 572; // standing spot in front of the building, clear of its facade
+  b.door = node(b.x, doorY); link(b.door, node(b.x, road));
+}
+function path(from, to) {
+  const dist = { [from]: 0 }, prev = {}, Q = new Set(Object.keys(NODES));
+  while (Q.size) {
+    let u = null; for (const k of Q) if (dist[k] != null && (u == null || dist[k] < dist[u])) u = k;
+    if (u == null || u === to) break; Q.delete(u);
+    for (const v of EDGES[u]) { const [x1, y1] = NODES[u], [x2, y2] = NODES[v]; const d = dist[u] + Math.hypot(x2 - x1, y2 - y1); if (dist[v] == null || d < dist[v]) { dist[v] = d; prev[v] = u; } }
+  }
+  const out = [to]; while (out[0] !== from && prev[out[0]]) out.unshift(prev[out[0]]);
+  return out.map(k => NODES[k]);
+}
+
+/* ================= draw world ================= */
+const NS = "http://www.w3.org/2000/svg";
+function S(tag, a, p) { const e = document.createElementNS(NS, tag); for (const k in a) { const v = a[k]; if (typeof v === "string" && v.startsWith("var(")) e.style.setProperty(k, v); else e.setAttribute(k, v); } if (p) p.append(e); return e; }
+const $ = id => document.getElementById(id);
+const W = $("world");
+const ground = S("rect", { x: 0, y: 0, width: 1280, height: 760, fill: "var(--grass)" }, W);
+// pond + park details
+S("ellipse", { cx: 640, cy: 112, rx: 54, ry: 30, fill: "#7fc9e8", stroke: "#5aa9cc", "stroke-width": 3 }, W);
+S("ellipse", { cx: 652, cy: 106, rx: 10, ry: 4, fill: "#fff", opacity: .7, class: "blink" }, W);
+// roads
+const gRoad = S("g", {}, W);
+RY.forEach(y => { S("rect", { x: 16, y: y - 20, width: 1248, height: 40, rx: 20, fill: "var(--road)" }, gRoad); S("line", { x1: 40, y1: y, x2: 1240, y2: y, stroke: "var(--road-line)", "stroke-width": 3, "stroke-dasharray": "18 16" }, gRoad); });
+RX.forEach(x => { S("rect", { x: x - 20, y: 200, width: 40, height: 340, fill: "var(--road)" }, gRoad); S("line", { x1: x, y1: 222, x2: x, y2: 518, stroke: "var(--road-line)", "stroke-width": 3, "stroke-dasharray": "18 16" }, gRoad); });
+for (const b of Object.values(BLD)) { const [y0, y1] = b.row === "top" ? [168, 200] : b.row === "mid" ? [452, 540] : [540, 604]; S("rect", { x: b.x - 12, y: y0, width: 24, height: y1 - y0, fill: "#c9cfdc" }, gRoad); }
+// network cable soc <-> dc with packets
+S("path", { id: "cable", d: "M800,452 V500 H480 V452", fill: "none", stroke: "#2f8fd8", "stroke-width": 4, "stroke-dasharray": "3 7", opacity: .8 }, W);
+for (let i = 0; i < 3; i++) { const c = S("circle", { r: 6, fill: "#5cc8ff", stroke: "#fff", "stroke-width": 2 }, W); const am = S("animateMotion", { dur: "3s", repeatCount: "indefinite", begin: (i * 1) + "s" }, c); S("mpath", { href: "#cable" }, am); }
+// trees
+const gTree = S("g", {}, W);
+const TREES = [[320, 90], [292, 130], [348, 128], [960, 92], [932, 132], [990, 128], [320, 660], [296, 700], [350, 700], [640, 660], [614, 704], [668, 702], [960, 662], [934, 704], [988, 702], [24, 400], [1256, 400], [640, 300], [640, 440], [320, 300], [960, 440]];
+const treeTops = TREES.map(([x, y]) => { S("rect", { x: x - 3, y: y + 6, width: 6, height: 14, fill: "#7a5230" }, gTree); return S("circle", { cx: x, cy: y, r: 17, fill: "var(--tree)", stroke: "var(--ink)", "stroke-width": 2.5 }, gTree); });
+// cars
+const gCar = S("g", {}, W);
+[["M30,190 H1250 V210 H30 Z", "#ffc53d", 26], ["M1250,530 H30 V550 H1250 Z", "#ff7a59", 31], ["M640,190 V540", "#5cc8ff", 9]].forEach(([d, col, dur], i) => {
+  const p = S("path", { id: "car" + i, d, fill: "none" }, gCar);
+  const c = S("g", {}, gCar); S("rect", { x: -13, y: -8, width: 26, height: 16, rx: 5, fill: col, stroke: "var(--ink)", "stroke-width": 2.5 }, c); S("rect", { x: -5, y: -6, width: 10, height: 12, rx: 2, fill: "#dff3ff" }, c);
+  const am = S("animateMotion", { dur: dur + "s", repeatCount: "indefinite", rotate: "auto" }, c); S("mpath", { href: "#car" + i }, am);
+});
+// route overlay layer
+const gRoute = S("g", {}, W);
+// buildings
+const gB = S("g", {}, W);
+const bEls = {};
+for (const id of ORDER) {
+  const b = BLD[id];
+  const h = b.row === "mid" ? 150 : b.row === "top" ? 112 : 108, w = 220;
+  const x0 = b.x - w / 2, y1 = b.row === "top" ? 168 : b.row === "mid" ? 452 : 712, y0 = y1 - h;
+  const g = S("g", { class: "bld", tabindex: 0, role: "button", "aria-label": b.n }, gB);
+  S("ellipse", { cx: b.x, cy: y1 + 4, rx: w / 2 + 6, ry: 10, fill: "rgba(0,0,0,.16)" }, g);
+  const body = S("g", { class: "body" }, g);
+  S("rect", { x: x0, y: y0 + 26, width: w, height: h - 26, rx: 8, fill: "#fbf7ee", stroke: "var(--ink)", "stroke-width": 3.5 }, body);
+  // roof
+  if (id === "hall" || id === "lib") S("path", { d: `M${x0 - 10},${y0 + 30} L${b.x},${y0 - 6} L${x0 + w + 10},${y0 + 30} Z`, fill: b.roof, stroke: "var(--ink)", "stroke-width": 3.5, "stroke-linejoin": "round" }, body);
+  else if (id === "soc") { S("rect", { x: x0 - 6, y: y0 + 14, width: w + 12, height: 18, rx: 6, fill: b.roof, stroke: "var(--ink)", "stroke-width": 3.5 }, body); }
+  else S("path", { d: `M${x0 - 8},${y0 + 32} Q${b.x},${y0 - 4} ${x0 + w + 8},${y0 + 32} Z`, fill: b.roof, stroke: "var(--ink)", "stroke-width": 3.5 }, body);
+  // windows
+  const rows = b.row === "mid" ? 3 : 2;
+  for (let r = 0; r < rows; r++) for (let c = 0; c < 4; c++) {
+    if (r === rows - 1 && (c === 1 || c === 2)) continue;
+    S("rect", { x: x0 + 18 + c * 50, y: y0 + 46 + r * 30, width: 32, height: 20, rx: 3, fill: (r + c + id.length) % 3 ? "#bfe3f5" : "#ffe9a3", stroke: "var(--ink)", "stroke-width": 2, class: (r * 4 + c + id.length) % 5 === 0 ? "blink" : "" }, body);
+  }
+  S("rect", { x: b.x - 18, y: y1 - 36, width: 36, height: 36, rx: 4, fill: b.col, stroke: "var(--ink)", "stroke-width": 3 }, body);
+  // sign plate
+  S("rect", { class: "plate", x: b.x - 92, y: y1 - 74, width: 184, height: 32, rx: 9, fill: "#fff", stroke: "var(--ink)", "stroke-width": 3 }, body);
+  const t = S("text", { class: "sign", x: b.x, y: y1 - 51, "text-anchor": "middle" }, body); t.textContent = b.n;
+  // emblem
+  const ex = x0 + w - 4, ey = y0 + 22;
+  S("circle", { cx: ex, cy: ey, r: 24, fill: b.col, stroke: "var(--ink)", "stroke-width": 3 }, body);
+  const et = S("text", { x: ex, y: ey + 7, "text-anchor": "middle", "font-size": b.g.length > 2 ? 15 : 20, "font-weight": 900, fill: "#fff" }, body); et.textContent = b.g;
+  // building specific motion
+  if (id === "soc") { const r = S("g", { class: "spin" }, body); S("path", { d: `M${x0 + 40},${y0 + 4} L${x0 + 40},${y0 - 26} A30,30 0 0 1 ${x0 + 66},${y0 - 11} Z`, fill: "#5cc8ff", opacity: .85 }, r); S("circle", { cx: x0 + 40, cy: y0 + 4, r: 6, fill: "var(--ink)" }, body); }
+  if (id === "dc") for (let i = 0; i < 6; i++) S("circle", { cx: x0 + 30 + i * 12, cy: y0 + 22, r: 4, fill: i % 2 ? "#2ec4b6" : "#ffc53d", class: "blink", style: `animation-delay:${i * .23}s` }, body);
+  if (id === "dev") { const gg = S("g", { class: "spin slow" }, body); S("circle", { cx: x0 + 34, cy: y0 + 6, r: 15, fill: "#ffc53d", stroke: "var(--ink)", "stroke-width": 9, "stroke-dasharray": "5 4" }, gg); }
+  if (id === "bcp" || id === "sup" || id === "hq") { S("line", { x1: x0 + 24, y1: y0 + 14, x2: x0 + 24, y2: y0 - 28, stroke: "var(--ink)", "stroke-width": 3 }, body); S("path", { class: "wave", d: `M${x0 + 25},${y0 - 28} h30 l-6,9 l6,9 h-30 Z`, fill: id === "bcp" ? "#ff5a5f" : id === "sup" ? "#5cc8ff" : "#ffc53d", stroke: "var(--ink)", "stroke-width": 2 }, body); }
+  if (id === "audit") { const sw = S("g", { class: "swing" }, body); S("line", { x1: x0 + 36, y1: y0 + 8, x2: x0 + 36, y2: y0 + 22, stroke: "var(--ink)", "stroke-width": 2 }, sw); S("circle", { cx: x0 + 36, cy: y0 + 30, r: 9, fill: "#dff3ff", stroke: "var(--ink)", "stroke-width": 3 }, sw); }
+  bEls[id] = g;
+  const go = () => visit(id);
+  g.addEventListener("click", go);
+  g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+}
+// clouds
+const gCloud = S("g", { opacity: .55 }, W);
+[[80, 60, 0, 70], [300, 280, -25, 95], [200, 600, -50, 85]].forEach(([x, y, delay, dur]) => {
+  const c = S("g", { class: "cloud", style: `animation-duration:${dur}s;animation-delay:${delay}s` }, gCloud);
+  [[0, 0, 40], [34, -8, 30], [60, 4, 26]].forEach(([dx, dy, r]) => S("circle", { cx: x + dx, cy: y + dy, r, fill: "#fff" }, c));
+});
+
+/* ================= overlay: markers & pins ================= */
+const overlay = $("overlay");
+const markers = {};
+for (const id of ORDER) {
+  const b = BLD[id];
+  const top = b.row === "top" ? 168 - 112 : b.row === "mid" ? 452 - 150 : 712 - 108;
+  const m = document.createElement("div"); m.className = "marker"; m.style.left = b.x + "px"; m.style.top = (top - 4) + "px";
+  m.innerHTML = "<b>!</b><span></span>"; overlay.append(m); markers[id] = m;
+}
+
+/* ================= walkers ================= */
+const ar = { el: $("arale"), x: 0, y: 0, path: [], dir: 1 };
+const al = { el: $("allan"), x: 0, y: 0, dir: 1 };
+ar.el.querySelector("img").src = SPRITES.arale_full2; al.el.querySelector("img").src = SPRITES.allan_full;
+let trail = [];
+function place(w) { w.el.style.left = (w.x - parseFloat(w.el.style.width) / 2) + "px"; w.el.style.top = (w.y - parseFloat(w.el.style.height)) + "px"; w.el.style.setProperty("--dir", w.dir); w.el.style.zIndex = Math.round(w.y); }
+function warp(x, y) { ar.x = x; ar.y = y; al.x = x - 46; al.y = y; trail = [[al.x, al.y], [x, y]]; place(ar); place(al); }
+let arriveCb = null, curNode = null;
+function walkTo(doorKey, cb) {
+  const from = curNode || BLD.hq.door;
+  const pts = path(from, doorKey);
+  ar.path = pts.slice(); arriveCb = cb; curNode = doorKey;
+  if (pts.length <= 1) { ar.path = []; setTimeout(() => cb && cb(), 50); }
+}
+const SPEED = 300;
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  let moving = false;
+  if (ar.path.length) {
+    const [tx, ty] = ar.path[0]; const dx = tx - ar.x, dy = ty - ar.y, d = Math.hypot(dx, dy), step = SPEED * dt;
+    if (Math.abs(dx) > 1) ar.dir = dx < 0 ? -1 : 1;
+    if (d <= step) { ar.x = tx; ar.y = ty; ar.path.shift(); } else { ar.x += dx / d * step; ar.y += dy / d * step; }
+    moving = true;
+    const lt = trail[trail.length - 1]; if (!lt || Math.hypot(lt[0] - ar.x, lt[1] - ar.y) > 4) trail.push([ar.x, ar.y]);
+    if (!ar.path.length && arriveCb) { const cb = arriveCb; arriveCb = null; setTimeout(cb, 120); }
+  }
+  // Allan follows about 56px behind along Arale's trail; when she stops he steps beside her
+  let tgt = trail.length > 14 ? trail[trail.length - 14] : [ar.x - 46 * ar.dir, ar.y];
+  if (!moving) tgt = [ar.x - 46 * ar.dir, ar.y];
+  const fx = tgt[0] - al.x, fy = tgt[1] - al.y, fd = Math.hypot(fx, fy);
+  const alMoving = fd > 2;
+  if (alMoving) { const st = Math.min(fd, (moving ? SPEED : 160) * dt); al.x += fx / fd * st; al.y += fy / fd * st; if (Math.abs(fx) > 1) al.dir = fx < 0 ? -1 : 1; }
+  if (!moving && !alMoving) al.dir = ar.x >= al.x ? 1 : -1;
+  if (trail.length > 400) trail = trail.slice(-200);
+  ar.el.classList.toggle("walk", moving); al.el.classList.toggle("walk", alMoving);
+  place(ar); place(al);
+  requestAnimationFrame(frame);
+}
+
+/* ================= audio & dialogue ================= */
+let soundOn = true, audio = null, userActed = false;
+function say(id, extraText, acts) {
+  const [w, f, t] = LINES[id];
+  showDlg(w, f, extraText ? extraText : t, acts);
+  if (audio) { audio.pause(); audio = null; }
+  if (soundOn && userActed && AUDIO[id]) { audio = new Audio(AUDIO[id].src); audio.play().catch(() => {}); }
+}
+let typeTimer = null;
+function showDlg(w, f, text, acts) {
+  const d = $("dlg"); d.hidden = false;
+  $("dlgFace").src = SPRITES[f]; $("dlgFace").alt = NAMES[w];
+  const nm = $("dlgName"); nm.textContent = NAMES[w]; nm.className = "nm " + w;
+  const tx = $("dlgText"); clearInterval(typeTimer);
+  const chars = [...text]; let i = 0; tx.textContent = "";
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) tx.textContent = text;
+  else typeTimer = setInterval(() => { i += 2; tx.textContent = chars.slice(0, i).join(""); if (i >= chars.length) clearInterval(typeTimer); }, 40);
+  const box = $("dlgActs"); box.innerHTML = "";
+  (acts || [["關閉", () => { $("dlg").hidden = true; }]]).forEach(([label, fn, cls]) => {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = label; if (cls) b.className = cls; b.addEventListener("click", fn); box.append(b);
+  });
+}
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; t.style.animation = "none"; void t.offsetWidth; t.style.animation = ""; clearTimeout(toast.tm); toast.tm = setTimeout(() => t.hidden = true, 2600); }
+
+/* ================= filters, markers, log ================= */
+let month = new Date().getMonth() + 1, freq = "all", mode = "town";
+function inMonth(q, m) {
+  if (!m) return true;
+  const f = q[0];
+  if (f === "quarter") return m % 3 === 0;
+  if (f === "half") return m === 6 || m === 12;
+  if (f === "year") return q[1].includes(m);
+  return true;
+}
+const KEY = new Set(["year", "half", "quarter"]);
+function match(q) { return (freq === "all" || q[0] === freq) && inMonth(q, month); }
+function refreshMarkers() {
+  for (const id of ORDER) {
+    const list = BLD[id].q.filter(match);
+    const key = list.some(q => KEY.has(q[0]));
+    const m = markers[id];
+    m.hidden = mode !== "town" || !list.length;
+    m.classList.toggle("key", key);
+    m.querySelector("b").textContent = key ? "★" : "!";
+    m.querySelector("span").textContent = list.length;
+    bEls[id].classList.toggle("dim", mode === "town" && (freq !== "all" || month) && !list.length);
+  }
+  renderLog();
+}
+function renderLog() {
+  const fl = freq === "all" ? "全部頻率" : FQ[freq][0];
+  $("logTitle").textContent = `任務日誌：${month ? month + " 月" : "全年"}・${fl}`;
+  const html = ORDER.map(id => {
+    const list = BLD[id].q.filter(match); if (!list.length) return "";
+    return `<div class="grp"><h3><button type="button" data-go="${id}">${BLD[id].n} ›</button></h3><ul>${list.map(q => `<li><i style="background:${FQ[q[0]][1]}"></i><span>${q[2]}${q[5].includes("V") ? "（顧問建議）" : ""}</span><code>${q[3]}</code></li>`).join("")}</ul></div>`;
+  }).join("");
+  $("loglist").innerHTML = html || '<p class="qempty">這個組合沒有任務，換個月份或頻率看看。</p>';
+  $("loglist").querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => { $("game").scrollIntoView({ behavior: "smooth", block: "start" }); visit(b.dataset.go); }));
+}
+function applySeason() {
+  const m = month || 10;
+  const s = m >= 3 && m <= 5 ? ["#b9e39c", "#8fd18a"] : m >= 6 && m <= 8 ? ["#9fd88a", "#3fae5f"] : m >= 9 && m <= 11 ? ["#d6d68f", "#e39a3b"] : ["#dfeee6", "#7fb8a0"];
+  document.documentElement.style.setProperty("--grass", s[0]); document.documentElement.style.setProperty("--tree", s[1]);
+  $("snow").classList.toggle("on", m === 12 || m <= 2);
+}
+
+/* ================= quest window ================= */
+let store = {};
+try { store = JSON.parse(localStorage.getItem("isms-town") || "{}"); } catch (e) { store = {}; }
+const save = () => { try { localStorage.setItem("isms-town", JSON.stringify(store)); } catch (e) {} };
+const TOTAL = ORDER.reduce((a, id) => a + BLD[id].q.length, 0);
+$("readyTot").textContent = TOTAL;
+const BADGES = [[5, "資安新手"], [15, "表單達人"], [30, "稽核不怕"], [60, "ISMS 隊長"], [TOTAL, "ISMS 大師"]];
+function refreshReady(announce) {
+  const n = Object.values(store).filter(Boolean).length;
+  $("readyNum").textContent = n; $("readyBar").style.width = (n / TOTAL * 100) + "%";
+  $("badges").innerHTML = BADGES.map(([k, nm]) => `<span class="${n >= k ? "got" : ""}">${n >= k ? "★ " : ""}${nm}（${k}）</span>`).join("");
+  if (announce) { const b = BADGES.find(([k]) => k === n); if (b) toast(`★ 獲得徽章：${b[1]}！`); }
+}
+let qBld = null, qTab = "all";
+function openQuest(id) {
+  qBld = id; qTab = freq;
+  const b = BLD[id];
+  $("game").classList.toggle("qleft", b.x > 640);
+  $("quest").hidden = false;
+  $("qEmb").textContent = b.g; $("qEmb").style.background = b.col; $("qEmb").style.fontSize = b.g.length > 2 ? "15px" : "22px";
+  $("qTitle").textContent = b.n;
+  $("qCaps").innerHTML = b.caps.map(c => `<span><b>${c}</b> ${CAPN[c]}</span>`).join("");
+  renderQuest();
+  Object.entries(bEls).forEach(([k, g]) => g.classList.toggle("here", k === id));
+}
+function renderQuest() {
+  const b = BLD[qBld];
+  const has = new Set(b.q.map(q => q[0]));
+  const tabs = [["all", "全部", null], ...FKEYS.filter(f => has.has(f)).map(f => [f, FQ[f][0], FQ[f][1]])];
+  if (!tabs.some(t => t[0] === qTab)) qTab = "all";
+  $("qTabs").innerHTML = tabs.map(([k, n, c]) => `<button type="button" data-t="${k}" aria-pressed="${k === qTab}">${c ? `<i style="background:${c}"></i>` : ""}${n}</button>`).join("");
+  $("qTabs").querySelectorAll("button").forEach(x => x.addEventListener("click", () => { qTab = x.dataset.t; renderQuest(); }));
+  const list = b.q.map((q, i) => [q, i]).filter(([q]) => qTab === "all" || q[0] === qTab);
+  const when = q => q[0] === "year" ? q[1].map(m => m + " 月").join("、") : q[0] === "half" ? "6・12 月" : q[0] === "quarter" ? "3・6・9・12 月" : FQ[q[0]][0];
+  $("qBody").innerHTML = list.map(([q, i]) => {
+    const key = qBld + ":" + i, done = !!store[key], now = month && inMonth(q, month) && KEY.has(q[0]);
+    return `<label class="qcard${done ? " done" : ""}${now ? " now" : ""}" style="border-left-color:${FQ[q[0]][1]}"><input type="checkbox" data-k="${key}" ${done ? "checked" : ""} aria-label="完成：${q[2]}"><div><div class="qn">${q[2]}</div><div class="qm"><span class="when">${when(q)}</span><code>${q[3]}</code><span>${q[4]}</span>${q[5].includes("M") ? '<span class="must">稽核必要</span>' : ""}${q[5].includes("V") ? '<span class="adv">顧問建議</span>' : ""}</div></div></label>`;
+  }).join("") + (qBld === "hq" ? '<div class="qnote">Allan 顧問小提醒：ISMS 依 ISO/IEC 27001:2022 的 PDCA 運轉。文件分四階：手冊與適用性聲明書 2 份、程序書 23 份、作業說明書 23 份、表單 62 種。寫你所做、做你所寫、留下紀錄。</div>' : "");
+  $("qBody").querySelectorAll("input").forEach(c => c.addEventListener("change", () => { store[c.dataset.k] = c.checked; save(); c.closest(".qcard").classList.toggle("done", c.checked); refreshReady(c.checked); }));
+}
+$("qClose").addEventListener("click", () => { $("quest").hidden = true; Object.values(bEls).forEach(g => g.classList.remove("here")); });
+
+/* ================= visiting & flows ================= */
+let flow = null, flowStep = -1;
+function visit(id) {
+  userActed = true;
+  if (mode === "flow") setMode("town");
+  $("quest").hidden = true;
+  showDlg("R", "arale_cheer", `出發！前往${BLD[id].n}……`, []);
+  walkTo(BLD[id].door, () => { say(id); openQuest(id); });
+}
+function clearRoute() { gRoute.innerHTML = ""; overlay.querySelectorAll(".pin").forEach(p => p.remove()); }
+function startFlow(fid) {
+  userActed = true;
+  flow = FLOWS[fid]; flowStep = -1;
+  document.querySelectorAll("#flowSeg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.f === fid)));
+  $("quest").hidden = true; clearRoute();
+  // draw the whole route from step 1 through the last step
+  const stops = flow.steps.map(s => BLD[s[0]].door);
+  let pts = [];
+  for (let i = 1; i < stops.length; i++) pts = pts.concat(path(stops[i - 1], stops[i]));
+  if (pts.length) S("path", { class: "routeline", d: pts.map((p, i) => (i ? "L" : "M") + p[0] + "," + p[1]).join(" "), stroke: flow.c }, gRoute);
+  flow.steps.forEach((s, i) => {
+    const b = BLD[s[0]]; const p = document.createElement("div"); p.className = "pin"; p.textContent = i + 1;
+    const same = flow.steps.slice(0, i).filter(t => t[0] === s[0]).length;
+    p.style.left = (b.x - 70 + same * 40) + "px"; p.style.top = (NODES[b.door][1] + (b.row === "top" ? -8 : b.row === "mid" ? -20 : 14)) + "px"; p.dataset.i = i; overlay.append(p);
+  });
+  say(flow.line, null, [["開始走 ▶", () => nextStep(), "go"]]);
+}
+function nextStep() {
+  flowStep++;
+  const pins = overlay.querySelectorAll(".pin");
+  pins.forEach(p => { const i = +p.dataset.i; p.classList.toggle("done", i < flowStep); p.classList.toggle("cur", i === flowStep); });
+  if (flowStep >= flow.steps.length) {
+    showDlg("A", "allan_laugh", `「${flow.n}」流程走完了！每一站都留下了紀錄，稽核時就拿得出證據。`, [["換一條流程", () => { $("dlg").hidden = true; }, "go"], ["回到逛小鎮", () => setMode("town")]]);
+    toast(`★ 完成流程：${flow.n}`);
+    return;
+  }
+  const [bid, text, code] = flow.steps[flowStep];
+  showDlg("R", "arale_explain", `第 ${flowStep + 1} 站，前往${BLD[bid].n}……`, []);
+  walkTo(BLD[bid].door, () => {
+    if (flow.alarm && flowStep === 1) { const a = $("alarm"); a.classList.remove("on"); void a.offsetWidth; a.classList.add("on"); }
+    const last = flowStep === flow.steps.length - 1;
+    showDlg(flowStep % 2 ? "A" : "R", flowStep % 2 ? "allan_point" : "arale_thumb", `【第 ${flowStep + 1} 站・${BLD[bid].n}】${text}（${code}）`,
+      [[last ? "完成 ★" : "下一步 ▶", () => nextStep(), "go"], ["看這裡的任務", () => openQuest(bid)]]);
+  });
+}
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll("#modeSeg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === m)));
+  $("flowRow").hidden = m !== "flow";
+  if (m === "town") { clearRoute(); flow = null; document.querySelectorAll("#flowSeg button").forEach(b => b.setAttribute("aria-pressed", "false")); }
+  else { $("quest").hidden = true; showDlg("A", "allan_smile", "選一條流程，地圖上會畫出路線。按「開始走」，我們就一站一站帶你走。", [["關閉", () => { $("dlg").hidden = true; }]]); }
+  refreshMarkers();
+}
+
+/* ================= HUD wiring ================= */
+$("monthSeg").innerHTML = `<button type="button" data-m="0" aria-pressed="false">全年</button>` + Array.from({ length: 12 }, (_, i) => `<button type="button" data-m="${i + 1}" aria-pressed="${i + 1 === month}">${i + 1}月</button>`).join("");
+$("monthSeg").querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+  month = +b.dataset.m; $("monthSeg").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  applySeason(); refreshMarkers(); if (qBld && !$("quest").hidden) renderQuest();
+}));
+$("freqSeg").innerHTML = `<button type="button" data-f="all" aria-pressed="true">全部</button>` + FKEYS.map(f => `<button type="button" data-f="${f}" aria-pressed="false"><i style="background:${FQ[f][1]}"></i>${FQ[f][0]}</button>`).join("");
+$("freqSeg").querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+  freq = b.dataset.f; $("freqSeg").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  refreshMarkers(); if (qBld && !$("quest").hidden) { qTab = freq; renderQuest(); }
+}));
+$("flowSeg").innerHTML = Object.entries(FLOWS).map(([k, f]) => `<button class="pill" type="button" data-f="${k}" aria-pressed="false"><i style="width:10px;height:10px;border-radius:50%;background:${f.c}"></i>${f.n}</button>`).join("");
+$("flowSeg").querySelectorAll("button").forEach(b => b.addEventListener("click", () => startFlow(b.dataset.f)));
+document.querySelectorAll("#modeSeg button").forEach(b => b.addEventListener("click", () => { userActed = true; setMode(b.dataset.mode); }));
+$("sound").addEventListener("click", () => { soundOn = !soundOn; $("sound").setAttribute("aria-pressed", String(soundOn)); $("sound").textContent = "聲音：" + (soundOn ? "開" : "關"); if (!soundOn && audio) audio.pause(); });
+
+const wrap = $("wrap"), stage = $("stage");
+function fit() { stage.style.setProperty("--s", wrap.clientWidth / 1280); }
+new ResizeObserver(fit).observe(wrap); fit();
+
+/* ================= start ================= */
+curNode = BLD.hq.door; warp(...NODES[BLD.hq.door]); al.x -= 6;
+applySeason(); refreshMarkers(); refreshReady(false);
+showDlg("R", "arale_cheer", LINES.welcome1[2], [["▶ 開始", () => { userActed = true; say("welcome1", null, [["下一句 ▶", () => say("welcome2"), "go"]]); }, "go"], ["略過", () => { userActed = true; $("dlg").hidden = true; }]]);
+requestAnimationFrame(frame);
+</script>
