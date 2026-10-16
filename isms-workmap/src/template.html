@@ -1,0 +1,849 @@
+<title>ISMS 工作地圖</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="用時間、流程、工作類別三種視角，看 ISMS 一整年的日常工作如何發生、流動與累積成紀錄。製作：Allan Lo，2026/10/16">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: a night-time "operations map" stage (fixed 1280x720, scaled): left 880px is the active lens
+   (time dial / transit-style process map / capability districts), right column is the live feed, record counters and the two guides.
+   One simulated year (2027) drives all three lenses; page chrome below follows the viewer's theme. */
+:root {
+  /* map world (single deliberate dark look) */
+  --m-bg: #12203f;
+  --m-grid: rgba(150, 180, 255, .06);
+  --m-panel: #1b2a54;
+  --m-panel-2: #223467;
+  --m-line: #33498d;
+  --m-text: #eef3ff;
+  --m-muted: #9fb0d6;
+  --m-ink: #0b142b;
+  /* frequency colours: the map's legend */
+  --f-day: #2ec4b6;
+  --f-adhoc: #ff7a59;
+  --f-month: #ffc93c;
+  --f-quarter: #b48cff;
+  --f-half: #5cc8ff;
+  --f-year: #9be15d;
+  --f-alert: #ff4d5e;
+
+  /* page chrome */
+  --bg: #eef2f8; --fg: #172140; --sub: #56617f; --line: #cbd3e4; --card: #ffffff; --accent: #11808a; --accent-ink: #ffffff; --chip: #e3e9f4;
+
+  --f-display: "Huninn", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --f-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #0e1427; --fg: #e7ecf7; --sub: #a1abc6; --line: #2a3554; --card: #172039; --accent: #3cc6cf; --accent-ink: #0b1222; --chip: #222d4c; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #0e1427; --fg: #e7ecf7; --sub: #a1abc6; --line: #2a3554; --card: #172039; --accent: #3cc6cf; --accent-ink: #0b1222; --chip: #222d4c; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 15px; line-height: 1.6; }
+.page { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 26px 48px; display: grid; gap: 18px; }
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 24px; }
+header.top .eyebrow { font-size: 12px; letter-spacing: .14em; color: var(--sub); font-weight: 700; }
+header.top h1 { margin: 2px 0 0; font-family: var(--f-display); font-weight: 400; font-size: clamp(28px, 4.4vw, 44px); line-height: 1.15; text-wrap: balance; }
+header.top h1 em { font-style: normal; color: var(--accent); }
+header.top .by { font-size: 13px; color: var(--sub); text-align: right; }
+header.top .by b { color: var(--fg); }
+
+/* ---------- stage ---------- */
+.stage-wrap { position: relative; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 14px; background: var(--m-bg); box-shadow: 0 14px 40px rgba(10, 20, 50, .28); }
+.stage { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; transform-origin: 0 0; transform: scale(var(--s, .5)); overflow: hidden; color: var(--m-text); font-family: var(--f-body);
+  background:
+    linear-gradient(var(--m-grid) 1px, transparent 1px) 0 0 / 40px 40px,
+    linear-gradient(90deg, var(--m-grid) 1px, transparent 1px) 0 0 / 40px 40px,
+    radial-gradient(900px 600px at 35% 50%, #1a2c5a, var(--m-bg)); }
+.topbar { position: absolute; left: 16px; right: 16px; top: 10px; height: 46px; display: flex; align-items: center; gap: 14px; }
+.topbar .ttl { font-family: var(--f-display); font-size: 26px; white-space: nowrap; }
+.topbar .ttl small { font-family: var(--f-mono); font-size: 15px; color: var(--m-muted); margin-left: 6px; }
+.lensbar { display: flex; gap: 6px; margin-left: 10px; }
+.lensbar button { font: inherit; font-size: 15px; font-weight: 700; color: var(--m-muted); background: transparent; border: 1.5px solid var(--m-line); border-radius: 20px; padding: 3px 14px; cursor: pointer; }
+.lensbar button[aria-pressed="true"] { color: var(--m-ink); background: var(--m-text); border-color: var(--m-text); }
+.datebox { margin-left: auto; font-family: var(--f-mono); font-weight: 700; font-size: 26px; letter-spacing: .02em; display: flex; align-items: baseline; gap: 10px; font-variant-numeric: tabular-nums; }
+.datebox i { font-style: normal; font-family: var(--f-body); font-size: 15px; color: var(--m-muted); }
+.datebox b { font-family: var(--f-body); font-size: 13px; color: var(--m-ink); background: var(--f-month); border-radius: 12px; padding: 1px 9px; }
+
+.view { position: absolute; left: 16px; top: 66px; width: 880px; height: 636px; opacity: 0; visibility: hidden; transform: scale(.97); transition: opacity .5s, transform .5s, visibility 0s linear .5s; }
+.view.active { opacity: 1; visibility: visible; transform: none; transition: opacity .5s, transform .5s; }
+.view svg { position: absolute; inset: 0; width: 880px; height: 636px; overflow: visible; }
+.view text { font-family: var(--f-body); fill: var(--m-text); }
+
+/* time lens */
+.legend { position: absolute; left: 4px; top: 4px; display: grid; gap: 4px; font-size: 14px; background: rgba(11, 20, 43, .55); border: 1px solid var(--m-line); border-radius: 12px; padding: 10px 12px; }
+.legend div { display: flex; align-items: center; gap: 8px; }
+.legend i { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.legend span { color: var(--m-muted); font-size: 12px; }
+.legend .h { font-weight: 900; color: var(--m-text); font-size: 13px; letter-spacing: .08em; margin-bottom: 2px; }
+.chip { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; font-size: 13px; font-weight: 700; color: var(--m-ink); border-radius: 12px; padding: 2px 9px; box-shadow: 0 4px 14px rgba(0,0,0,.35); pointer-events: none;
+  transition: left .75s cubic-bezier(.5,0,.8,.4), top .75s cubic-bezier(.5,0,.8,.4), opacity .75s, transform .75s; animation: chipIn .35s cubic-bezier(.2,1.6,.4,1); }
+.chip small { font-family: var(--f-mono); font-size: 11px; margin-left: 6px; opacity: .75; }
+.chip.go { opacity: 0; transform: translate(-50%, -50%) scale(.3); }
+@keyframes chipIn { from { transform: translate(-50%, -50%) scale(.3); opacity: 0; } }
+.vault-bump { animation: bump .35s ease-out; transform-box: fill-box; transform-origin: center; }
+@keyframes bump { 40% { transform: scale(1.06); } }
+.notes { position: absolute; left: 4px; bottom: 4px; width: 210px; font-size: 12.5px; color: var(--m-muted); line-height: 1.45; background: rgba(11, 20, 43, .55); border: 1px solid var(--m-line); border-radius: 12px; padding: 10px 12px; }
+.notes b { color: var(--m-text); }
+
+/* flow lens */
+.station { cursor: pointer; }
+.station circle { transition: r .25s; }
+.station.ping circle.dot { animation: ping .7s ease-out; }
+@keyframes ping { 30% { r: 15; } }
+.station text { font-size: 14px; font-weight: 700; }
+.station .cnt { font-family: var(--f-mono); font-size: 11px; fill: var(--m-muted); font-weight: 500; }
+.tok-label { font-size: 12px; font-weight: 700; paint-order: stroke; stroke: var(--m-bg); stroke-width: 4px; }
+.lines-legend { position: absolute; left: 0; top: 0; right: 0; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; background: rgba(11, 20, 43, .6); border: 1px solid var(--m-line); border-radius: 12px; padding: 8px 12px; }
+.lines-legend div { display: flex; gap: 8px; align-items: center; }
+.lines-legend i { width: 22px; height: 5px; border-radius: 3px; flex: none; }
+
+/* category lens */
+.tiles { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(3, 1fr); gap: 10px; }
+.tile { position: relative; background: var(--m-panel); border: 1.5px solid var(--m-line); border-radius: 14px; padding: 10px 12px 10px; display: grid; grid-template-rows: auto auto 1fr auto auto; gap: 2px; cursor: pointer; overflow: hidden; transition: border-color .4s, background .4s; }
+.tile:hover { border-color: var(--m-muted); }
+.tile .hd { display: flex; align-items: center; gap: 7px; }
+.tile .hd i { font-style: normal; font-family: var(--f-mono); font-size: 12px; font-weight: 700; color: var(--m-ink); background: var(--m-text); border-radius: 5px; padding: 0 5px; }
+.tile .hd b { font-size: 17px; white-space: nowrap; }
+.tile .en { font-family: var(--f-mono); font-size: 10.5px; color: var(--m-muted); line-height: 1.2; }
+.tile .num { font-family: var(--f-mono); font-weight: 700; font-size: 30px; line-height: 1; align-self: end; }
+.tile .num small { font-family: var(--f-body); font-size: 12px; font-weight: 400; color: var(--m-muted); margin-left: 4px; }
+.tile .bars { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; height: 34px; align-items: end; margin-top: 4px; }
+.tile .bars span { background: var(--m-line); border-radius: 2px 2px 0 0; min-height: 2px; transition: height .4s; }
+.tile .bars span.cur { background: var(--f-month); }
+.tile .last { font-size: 12px; color: var(--m-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.tile .glow { position: absolute; inset: 0; border-radius: 14px; pointer-events: none; opacity: 0; }
+.tile.flash .glow { animation: glow 1s ease-out; }
+@keyframes glow { 0% { opacity: .9; } 100% { opacity: 0; } }
+
+/* side column */
+.side { position: absolute; left: 912px; right: 16px; top: 66px; bottom: 18px; display: grid; grid-template-rows: auto 1fr auto auto; gap: 10px; }
+.box { background: var(--m-panel); border: 1.5px solid var(--m-line); border-radius: 14px; padding: 10px 12px; }
+.box h3 { margin: 0 0 6px; font-size: 13px; letter-spacing: .1em; color: var(--m-muted); font-weight: 900; display: flex; justify-content: space-between; }
+.feed { overflow: hidden; display: grid; align-content: start; gap: 4px; }
+.feed .row { display: grid; grid-template-columns: 44px 10px 1fr; gap: 7px; align-items: center; font-size: 13.5px; line-height: 1.3; animation: rowIn .4s ease-out; }
+.feed .row time { font-family: var(--f-mono); font-size: 12px; color: var(--m-muted); }
+.feed .row i { width: 10px; height: 10px; border-radius: 50%; }
+.feed .row span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.feed .row span small { font-family: var(--f-mono); font-size: 11px; color: var(--m-muted); margin-left: 5px; }
+@keyframes rowIn { from { opacity: 0; transform: translateX(14px); } }
+.counts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 8px; }
+.counts div { display: grid; gap: 0; }
+.counts span { font-size: 12px; color: var(--m-muted); display: flex; align-items: center; gap: 5px; }
+.counts span i { width: 8px; height: 8px; border-radius: 50%; }
+.counts b { font-family: var(--f-mono); font-size: 20px; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.guide { position: relative; height: 196px; }
+.guide .bub { position: absolute; left: 0; right: 0; top: 0; min-height: 92px; background: #fff; color: var(--m-ink); border-radius: 14px; padding: 8px 12px; font-family: var(--f-display); font-size: 16px; line-height: 1.45; transition: opacity .3s; }
+.guide .bub .who { display: block; font-family: var(--f-body); font-size: 12px; font-weight: 900; color: #127f88; }
+.guide .bub.A .who { color: #2b3f78; }
+.guide .bub::after { content: ""; position: absolute; bottom: -12px; border: 7px solid transparent; border-top: 7px solid #fff; border-width: 12px 9px 0; }
+.guide .bub.A::after { left: 46px; }
+.guide .bub.R::after { right: 46px; }
+.guide .bub.idle { opacity: 0; }
+.guide img { position: absolute; bottom: 0; height: 92px; filter: drop-shadow(0 4px 8px rgba(0,0,0,.4)); transition: transform .3s, filter .3s; }
+.guide img.A { left: 4px; } .guide img.R { right: 4px; }
+.guide img.talk { animation: bob .4s ease-in-out infinite alternate; }
+.guide img.quiet { filter: drop-shadow(0 4px 8px rgba(0,0,0,.4)) saturate(.6) brightness(.8); }
+@keyframes bob { to { transform: translateY(-5px) rotate(1deg); } }
+.guide .names { position: absolute; bottom: 2px; left: 104px; right: 104px; text-align: center; font-size: 12px; color: var(--m-muted); line-height: 1.3; }
+
+.alarm { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(circle at 40% 50%, transparent 40%, rgba(255, 77, 94, .45)); }
+.alarm.on { animation: alarm 1s ease-in-out 4; }
+@keyframes alarm { 50% { opacity: 1; } }
+
+.cover { position: absolute; inset: 0; z-index: 10; border: 0; padding: 0; cursor: pointer; background: rgba(9, 16, 36, .84); color: var(--m-text); display: grid; place-items: center; font: inherit; }
+.cover > div { display: grid; justify-items: center; gap: 12px; text-align: center; }
+.cover .play { width: 120px; height: 120px; border-radius: 50%; background: var(--f-month); display: grid; place-items: center; box-shadow: 0 0 0 10px rgba(255, 201, 60, .2); }
+.cover .play::after { content: ""; border-left: 40px solid var(--m-ink); border-top: 25px solid transparent; border-bottom: 25px solid transparent; margin-left: 12px; }
+.cover h2 { margin: 6px 0 0; font-family: var(--f-display); font-weight: 400; font-size: 44px; }
+.cover p { margin: 0; font-size: 19px; color: var(--m-muted); }
+.cover[hidden] { display: none !important; }
+
+.summary { position: absolute; left: 120px; top: 110px; width: 660px; z-index: 8; background: var(--m-panel-2); border: 2px solid var(--m-text); border-radius: 18px; padding: 20px 26px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+.summary h2 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 32px; }
+.summary p { margin: 4px 0 12px; color: var(--m-muted); font-size: 15px; }
+.summary .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.summary .grid div { background: var(--m-panel); border-radius: 12px; padding: 8px 12px; border-left: 5px solid; }
+.summary .grid b { display: block; font-family: var(--f-mono); font-size: 28px; }
+.summary .grid span { font-size: 13px; color: var(--m-muted); }
+.summary .total { margin-top: 12px; font-size: 18px; font-weight: 700; }
+.summary .total b { font-family: var(--f-mono); color: var(--f-month); font-size: 24px; }
+.summary .credit { margin-top: 8px; font-size: 14px; color: var(--m-muted); }
+.summary button { margin-top: 12px; font: inherit; font-weight: 700; font-size: 15px; background: var(--f-month); color: var(--m-ink); border: 0; border-radius: 20px; padding: 6px 18px; cursor: pointer; }
+.summary[hidden] { display: none !important; }
+
+/* ---------- page controls ---------- */
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.btn { font: inherit; font-weight: 700; font-size: 14px; color: var(--fg); background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 7px 12px; cursor: pointer; min-height: 38px; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); min-width: 92px; justify-content: center; }
+.btn[aria-pressed="true"] { background: var(--chip); border-color: var(--accent); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg button { font: inherit; font-size: 14px; font-weight: 700; border: 0; background: var(--card); color: var(--sub); padding: 7px 12px; cursor: pointer; min-height: 38px; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.btn:focus-visible, .seg button:focus-visible, .lensbar button:focus-visible, .cover:focus-visible, .scrub:focus-visible, .tile:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.scrubwrap { display: grid; gap: 2px; }
+.scrub { position: relative; height: 34px; cursor: pointer; touch-action: none; }
+.scrub .track { position: absolute; left: 0; right: 0; top: 13px; height: 8px; border-radius: 4px; background: var(--chip); overflow: hidden; }
+.scrub .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--accent); }
+.scrub .knob { position: absolute; top: 7px; width: 20px; height: 20px; margin-left: -10px; border-radius: 50%; background: var(--card); border: 3px solid var(--accent); left: 0; }
+.months { display: grid; grid-template-columns: repeat(12, 1fr); font-size: 12px; color: var(--sub); text-align: center; }
+.months button { font: inherit; background: none; border: 0; color: inherit; cursor: pointer; padding: 2px 0; border-radius: 6px; }
+.months button:hover { color: var(--fg); background: var(--chip); }
+.months button.cur { color: var(--accent); font-weight: 900; }
+
+.below { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; min-width: 0; }
+.panel h2 { margin: 0 0 4px; font-family: var(--f-display); font-weight: 400; font-size: 22px; }
+.panel > p { margin: 0 0 8px; color: var(--sub); font-size: 14px; }
+.mlist { display: grid; gap: 10px; }
+.mgrp h4 { margin: 0 0 4px; font-size: 13px; display: flex; align-items: center; gap: 7px; letter-spacing: .06em; }
+.mgrp h4 i { width: 10px; height: 10px; border-radius: 50%; }
+.mgrp ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.mgrp li { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 8px; font-size: 14px; line-height: 1.4; align-items: baseline; }
+.mgrp li time { font-family: var(--f-mono); font-size: 12px; color: var(--sub); }
+.mgrp li code { font-family: var(--f-mono); font-size: 12px; color: var(--accent); white-space: nowrap; }
+.mgrp li .adv { font-size: 11px; border: 1px solid var(--sub); color: var(--sub); border-radius: 10px; padding: 0 6px; margin-left: 4px; white-space: nowrap; }
+.detail h3 { margin: 0; font-size: 18px; }
+.detail .meta { font-size: 13px; color: var(--sub); margin: 2px 0 8px; }
+.detail ul { margin: 0; padding-left: 1.1em; display: grid; gap: 3px; font-size: 14px; }
+.detail code { font-family: var(--f-mono); font-size: 12px; color: var(--accent); }
+.howto { display: grid; gap: 6px; font-size: 14px; }
+.howto div b { display: inline-block; min-width: 72px; }
+footer.foot { border-top: 1px solid var(--line); padding-top: 14px; font-size: 13px; color: var(--sub); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 20px; }
+footer.foot b { color: var(--fg); }
+@media (max-width: 760px) { .below { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) {
+  .chip, .feed .row, .guide img.talk, .alarm.on, .tile.flash .glow, .station.ping circle.dot { animation: none !important; }
+  .view, .chip { transition-duration: .01s !important; }
+}
+</style>
+
+<div class="page">
+  <header class="top">
+    <div>
+      <div class="eyebrow">ISMS 運作日常 · 互動動畫</div>
+      <h1><em>ISMS 工作地圖</em>：時間・流程・工作類別</h1>
+    </div>
+    <div class="by">製作：<b>Allan Lo</b>｜2026/10/16<br>導覽：Allan 顧問、AI 小助手阿拉蕾</div>
+  </header>
+
+  <div class="stage-wrap" id="wrap">
+    <div class="stage" id="stage">
+      <div class="topbar">
+        <div class="ttl">ISMS 工作地圖<small>2027</small></div>
+        <div class="lensbar" id="lensbar">
+          <button type="button" data-lens="time" aria-pressed="true">時間地圖</button>
+          <button type="button" data-lens="flow" aria-pressed="false">工作流程</button>
+          <button type="button" data-lens="cat" aria-pressed="false">工作類別</button>
+        </div>
+        <div class="datebox"><span id="dDate">2027/01/01</span><i id="dWeek">週五</i><b id="dTheme">年度目標</b></div>
+      </div>
+
+      <div class="view active" id="v-time">
+        <svg id="svgTime" viewBox="0 0 880 636"></svg>
+        <div class="legend" id="legendTime"></div>
+        <div class="notes"><b>怎麼看：</b>指針每走一格是一天。每完成一件工作，圓環上就會留下一個點，紀錄會飛進中間的紀錄庫。</div>
+        <div id="chipsTime"></div>
+      </div>
+      <div class="view" id="v-flow">
+        <svg id="svgFlow" viewBox="0 0 880 636"></svg>
+        <div class="lines-legend" id="legendFlow"></div>
+      </div>
+      <div class="view" id="v-cat"><div class="tiles" id="tiles"></div></div>
+
+      <aside class="side">
+        <div class="box"><h3><span>工作動態</span><span id="feedDay"></span></h3><div class="feed" id="feed"></div></div>
+        <div></div>
+        <div class="box"><h3><span>累積紀錄</span><span id="totalRec">0 筆</span></h3><div class="counts" id="counts"></div></div>
+        <div class="guide">
+          <div class="bub idle" id="bub"><span class="who" id="bubWho"></span><span id="bubText"></span></div>
+          <img class="A quiet" id="gA" alt="Allan 顧問">
+          <img class="R quiet" id="gR" alt="AI 小助手阿拉蕾">
+          <div class="names">Allan 顧問<br>阿拉蕾</div>
+        </div>
+      </aside>
+
+      <div class="alarm" id="alarm"></div>
+      <div class="summary" id="summary" hidden></div>
+      <button class="cover" id="cover" type="button" aria-label="開始導覽">
+        <div><div class="play"></div><h2>走一趟 ISMS 的一年</h2><p>同一年，三種看法：時間地圖・工作流程・工作類別</p></div>
+      </button>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn primary" id="play" type="button">▶ 播放</button>
+    <div class="seg" id="speed" role="group" aria-label="速度">
+      <button type="button" data-v="0.75" aria-pressed="false">慢</button>
+      <button type="button" data-v="0.38" aria-pressed="true">標準</button>
+      <button type="button" data-v="0.12" aria-pressed="false">快</button>
+    </div>
+    <div class="seg" id="lensSeg" role="group" aria-label="視角">
+      <button type="button" data-lens="time" aria-pressed="true">時間地圖</button>
+      <button type="button" data-lens="flow" aria-pressed="false">工作流程</button>
+      <button type="button" data-lens="cat" aria-pressed="false">工作類別</button>
+    </div>
+    <button class="btn" id="tour" type="button" aria-pressed="true">導覽自動切換視角：開</button>
+    <button class="btn" id="sound" type="button" aria-pressed="true">聲音：開</button>
+  </div>
+  <div class="scrubwrap">
+    <div class="scrub" id="scrub" role="slider" tabindex="0" aria-label="日期" aria-valuemin="1" aria-valuemax="365" aria-valuenow="1"><div class="track"><div class="fill" id="sFill"></div></div><div class="knob" id="sKnob"></div></div>
+    <div class="months" id="monthBtns"></div>
+  </div>
+
+  <div class="below">
+    <section class="panel" aria-labelledby="mTitle">
+      <h2 id="mTitle">1 月的 ISMS 工作</h2>
+      <p>依頻率列出這個月要做的事，ISMS 人員可以直接拿來排程。</p>
+      <div class="mlist" id="mlist"></div>
+    </section>
+    <section class="panel detail" aria-live="polite" id="detail">
+      <h2>三種看法</h2>
+      <div class="howto">
+        <div><b>時間地圖</b>一年是一個圓盤。由內到外：不定期、每天、每月、每季、半年、每年。看「什麼時候做什麼」。</div>
+        <div><b>工作流程</b>像捷運路線圖。每件工作是一個小點，沿著路線經過核准、執行、歸檔、月報、管審。看「工作怎麼流動」。</div>
+        <div><b>工作類別</b>ISMS 的 15 項運作能力。哪一區在忙就亮起來。看「誰的工作、做了多少」。</div>
+        <div>點一下畫面上的站點或能力區塊，這裡會顯示詳細的作業與表單。</div>
+      </div>
+    </section>
+  </div>
+
+  <footer class="foot">
+    <span>製作：<b>Allan Lo</b>｜2026/10/16｜導覽：Allan 顧問、AI 小助手阿拉蕾</span>
+    <span>資料依據：ISMS 文件清單及每月執行紀錄建議（12 月驗證版）、ISMS 的 15 項運作能力之作業流程（2027）；每季作業為顧問建議，不定期申請的件數為模擬</span>
+    <span>另一版：<a href="https://claude.ai/artifact/F9GKBTktpy39ckmyTM1up7" target="_blank" rel="noopener" style="color:var(--accent)">ISMS 的一年（劇情動畫）</a></span>
+  </footer>
+</div>
+
+<script>
+const SPRITES = __SPRITES__;
+const AUDIO = __AUDIO__;
+
+/* ================= data ================= */
+const FREQ = {
+  adhoc:   { name: "不定期", color: "var(--f-adhoc)",   hex: "#ff7a59", r: 132 },
+  day:     { name: "每天",   color: "var(--f-day)",     hex: "#2ec4b6", r: 160 },
+  month:   { name: "每月",   color: "var(--f-month)",   hex: "#ffc93c", r: 188 },
+  quarter: { name: "每季",   color: "var(--f-quarter)", hex: "#b48cff", r: 212 },
+  half:    { name: "半年",   color: "var(--f-half)",    hex: "#5cc8ff", r: 236 },
+  year:    { name: "每年",   color: "var(--f-year)",    hex: "#9be15d", r: 262 },
+  alert:   { name: "資安事件", color: "var(--f-alert)", hex: "#ff4d5e", r: 132 },
+};
+const FORDER = ["adhoc", "day", "month", "quarter", "half", "year"];
+const CATS = [
+  ["A01", "治理", "Governance"], ["A02", "人資安全", "Human resource security"], ["A03", "資訊保護", "Information protection"],
+  ["A04", "資產管理", "Asset management"], ["A05", "存取管理", "Identity & access mgmt"], ["A06", "保全組態", "Secure configuration"],
+  ["A07", "實體安全", "Physical security"], ["A08", "威脅與弱點", "Threat & vulnerability"], ["A09", "應用程式安全", "Application security"],
+  ["A10", "系統與網路", "System & network security"], ["A11", "供應者關係", "Supplier relationships"], ["A12", "資安事件", "Security event mgmt"],
+  ["A13", "持續性", "Continuity"], ["A14", "資安保證", "Information security assurance"], ["A15", "法規遵循", "Legal & compliance"],
+];
+const THEMES = ["年度目標", "年度清單", "關注者會議", "文件修訂", "資安宣導", "半年清查", "權限審查", "風險評鑑", "弱掃・供應商", "BCP 演練", "內稽・管審", "外部稽核"];
+
+/* process map stations (x, y in the 880x636 flow view; lp = label position) */
+const ST = {
+  req:   [60, 80, "提出申請", "b"],   app:  [210, 80, "主管核准", "b"],   exe:   [370, 80, "IT 執行", "b"],
+  rec:   [540, 240, "紀錄歸檔", "b"],
+  log:   [60, 240, "日誌與告警", "b"], chk:  [210, 240, "每日檢視", "b"],   judge: [370, 240, "異常研判", "a"],
+  inc:   [370, 350, "事件通報", "r"],  resp: [210, 350, "應變復原", "b"],   car:   [60, 350, "矯正改善", "a"],
+  priv:  [700, 240, "權限與規則審查", "b"],
+  intel: [800, 80, "情資蒐集", "r"],   review: [800, 170, "日誌審查", "r"], kpi:  [800, 260, "KPI 量測", "r"], mrep: [800, 350, "資安月報", "r"],
+  qm:    [640, 410, "季度追蹤會議", "b"],
+  goal:  [60, 500, "目標與計畫", "a"], ctx:  [210, 500, "盤點與全景", "a"], risk: [370, 500, "風險評鑑", "a"], drill: [540, 500, "執行與演練", "a"],
+  ia:    [700, 500, "內部稽核", "a"],  mr:   [800, 560, "管理審查", "r"],   ea:   [540, 610, "外部稽核", "r"],
+};
+const ST_INFO = {
+  req: "員工、主管或廠商提出需求：新人帳號、防火牆規則、外部連線、系統變更、機房進出……", app: "依程序書由權責主管審核，確認需求合理、符合最小權限。",
+  exe: "IT 依核准內容執行，必要時先做變更風險評估、保留回復計畫。", rec: "所有申請單、檢查與審查結果都在這裡歸檔，是稽核時的證據來源。",
+  log: "防火牆、主機、EDR、備份系統每天產生的日誌與告警。", chk: "每天看 EDR／防毒告警、確認備份成功、留意異常登入與主機網路監控。",
+  judge: "判斷是正常狀況還是資安事件。正常就歸檔；可疑就轉入事件通報。", inc: "依資訊安全事故管理程序書通報，填寫資通安全事故通報處理單。",
+  resp: "緊急處理小組依劇本應變：隔離、保全證據、從備份回存、恢復營運。", car: "找出根因、開立矯正處理單，並回饋到風險評鑑與控制措施。",
+  priv: "每半年清查特權帳號（雲端、OS／AP／DB、防火牆、NAS），並檢視防火牆政策與日誌。",
+  intel: "蒐集資安署網路月報、SOC 報告、廠商漏洞公告，記錄在資訊安全情資管理表。", review: "審查機房工作日誌與系統日誌，整理 SI、EDR 監控報告。",
+  kpi: "用 ISMS 有效性評估表統計 KPI，例如修補完成率、訓練完成率、事件處理時效。", mrep: "每月彙整成資安工作月報，提報主管；也是管理審查的輸入。",
+  qm: "每季資安工作小組會議：追蹤年度計畫進度、矯正措施、演練與抽測結果（顧問建議）。",
+  goal: "年初設定資安目標與訓練計畫，並更新各項年度清單；文件修訂也從這裡出發。", ctx: "盤點業務流程與資產、召開關注者會議、評鑑供應商。",
+  risk: "資產盤點後做風險評鑑、擬定風險處理計畫；弱點掃描結果也回到這裡。", drill: "宣導與訓練、權限審查、營運持續演練與備份回存測試。",
+  ia: "依內部稽核計畫查核各單位，開立矯正處理單。", mr: "高階主管審查整年的月報、KPI、稽核結果與風險，做出改善決策。", ea: "驗證公司的第三方稽核；稽核發現同樣要矯正，然後明年再轉一圈。",
+};
+const LINES = [
+  ["apply", "申請與變更（不定期）", "#ff7a59", ["req", "app", "exe", "rec"]],
+  ["monitor", "每日監控", "#2ec4b6", ["log", "chk", "judge", "rec"]],
+  ["incident", "資安事件", "#ff4d5e", ["judge", "inc", "resp", "car"], true],
+  ["priv", "半年審查", "#5cc8ff", ["priv", "rec"]],
+  ["month", "每月量測", "#ffc93c", ["intel", "review", "kpi", "mrep"]],
+  ["quarter", "每季追蹤", "#b48cff", ["mrep", "qm", "car"]],
+  ["year", "年度 PDCA", "#9be15d", ["goal", "ctx", "risk", "drill", "ia", "mr", "ea", "goal"]],
+];
+const YEAR_NEXT = { goal: "ctx", ctx: "risk", risk: "drill", drill: "ia", ia: "mr", mr: "ea", ea: "goal" };
+
+/* ---------- calendar ---------- */
+const DAYS = 365;
+const dateOf = d => new Date(2027, 0, 1 + d);
+const dayOf = (m, dd) => Math.round((new Date(2027, m - 1, dd) - new Date(2027, 0, 1)) / 864e5);
+const isWork = d => { const w = dateOf(d).getDay(); return w > 0 && w < 6; };
+const WEEK = "日一二三四五六";
+const pad = n => String(n).padStart(2, "0");
+const mmdd = d => { const t = dateOf(d); return `${pad(t.getMonth() + 1)}/${pad(t.getDate())}`; };
+const nextWork = d => { while (!isWork(d)) d++; return d; };
+
+/* ---------- event catalogue ---------- */
+const EV = [];
+const add = (d, freq, name, code, cats, route, extra = {}) => EV.push({ d, freq, name, code, cats: cats.split(","), route, ...extra });
+
+// 每年（依 ISMS 文件清單及每月執行紀錄建議）
+[
+  [1, 11, "年度資安目標設定", "L4-17", "A01", "goal"], [1, 20, "資訊安全管理訓練計畫", "L4-12", "A02", "goal"],
+  [2, 2, "ISMS 目標與績效管理計畫", "報告P", "A01", "goal"], [2, 3, "年度資安計畫與進度", "報告A", "A01", "goal"],
+  [2, 4, "資安委員會名單確認", "L4-03", "A01", "goal"], [2, 5, "內外部連絡清冊", "L4-04", "A12", "goal"],
+  [2, 8, "溝通規劃表", "L4-05", "A01", "goal"], [2, 9, "人員角色權責及職能需求表", "L4-06", "A02", "goal"],
+  [2, 10, "敏感職務清單", "L4-09", "A02", "goal"], [2, 11, "備份清單", "L4-25", "A13", "goal"],
+  [2, 12, "機房授權人員名單", "L4-29", "A07", "goal"], [2, 17, "版權軟體清冊", "L4-32", "A15", "goal"],
+  [2, 18, "核准安裝之軟體清單", "L4-33", "A06", "goal"], [2, 19, "金鑰憑證管理紀錄表", "L4-38", "A06", "goal"],
+  [2, 22, "組態安全管理表", "L4-39", "A06", "goal"], [2, 23, "內部網路 SLA 一覽表", "L4-40", "A10", "goal"],
+  [2, 24, "外部 IT 及雲服務清單", "L4-41", "A11", "goal"], [2, 25, "外來文件・資安法規清單", "L4-53・54", "A15", "goal"],
+  [2, 26, "安全區域佈置圖・網路架構圖", "自由格式", "A07,A10", "goal"],
+  [3, 9, "業務流程盤點・IT 系統清單", "L4-01", "A04", "ctx"], [3, 16, "關注者議題調查問卷", "問卷", "A01", "ctx"],
+  [3, 23, "關注者會議", "會議紀錄", "A01", "ctx"], [3, 25, "組織全景分析", "L4-02", "A01", "ctx"],
+  [4, 13, "ISMS 文件修訂", "L4-07", "A01", "goal"], [4, 27, "文件列表與版本更新", "L4-00", "A01", "goal"],
+  [5, 18, "全員資安宣導（3 小時）", "簽到・測驗", "A02", "drill"], [5, 27, "未上課人員統計與補課", "統計表", "A02", "drill"],
+  [7, 13, "一般使用者權限審查", "L4-26", "A05", "drill"],
+  [8, 10, "資訊資產盤點", "L4-21", "A04", "ctx"], [8, 19, "風險評鑑", "L4-21", "A01", "risk"],
+  [8, 26, "風險改善與機會實作計畫", "L4-22", "A01", "risk"], [8, 31, "風險與機會評鑑報告", "L4-23", "A01", "risk"],
+  [9, 7, "弱點掃描與處理", "弱掃報告", "A08", "risk"], [9, 14, "IT 人員資安專業課程（12 小時）", "上課證明", "A02", "drill"],
+  [9, 22, "委外供應商評鑑", "L4-42", "A11", "ctx"], [9, 24, "廠商 NDA・保密切結", "L4-43・44", "A11", "ctx"],
+  [10, 5, "營運衝擊分析 BIA", "L4-48", "A13", "drill"], [10, 12, "營運持續計畫 BCP", "L4-49", "A13", "drill"],
+  [10, 19, "營運持續演練", "L4-50・51", "A13", "drill"], [10, 20, "演練：事故通報與緊急小組", "L4-46・47", "A12", "drill"],
+  [10, 21, "備份回存測試", "L4-37", "A13", "drill"], [10, 27, "演練檢討與矯正", "L4-16", "A14", "drill"],
+  [11, 9, "內部稽核計畫", "L4-13", "A14", "ia"], [11, 16, "內部稽核執行", "L4-14", "A14", "ia"],
+  [11, 23, "內部稽核報告與矯正", "L4-15・16", "A14", "ia"], [11, 26, "管理審查會議", "報告C", "A01", "mr"],
+  [12, 7, "外部稽核（第三方驗證）", "稽核資料", "A14", "ea"], [12, 17, "外部稽核發現矯正", "L4-16", "A14", "ea"],
+].forEach(([m, dd, n, c, k, s]) => add(dayOf(m, dd), "year", n, c, k, [s, YEAR_NEXT[s]]));
+
+// 半年
+[6, 12].forEach(m => {
+  add(dayOf(m, 14), "half", "特權帳號清查", "L4-27", "A05", ["priv", "rec"]);
+  add(dayOf(m, 15), "half", "防火牆政策與日誌檢視", "L4-35", "A10", ["priv", "rec"]);
+});
+// 每季（顧問建議）
+[3, 6, 9, 12].forEach(m => {
+  const b = m === 12 ? 20 : 27;
+  [["資安工作小組會議", "報告A", "A01", ["mrep", "qm"]], ["矯正措施追蹤", "L4-16", "A14", ["qm", "car"]],
+   ["社交工程演練", "演練報告", "A02", ["qm", "car"]], ["備份回存抽測", "L4-37", "A13", ["qm", "car"]],
+   ["弱點修補追蹤", "追蹤表", "A08", ["qm", "car"]], ["供應商 SLA 與雲服務檢視", "L4-41", "A11", ["qm", "car"]]]
+    .forEach(([n, c, k, r], i) => add(nextWork(dayOf(m, b - 6 + i)), "quarter", n, c, k, r, { adv: true }));
+});
+// 每月
+for (let m = 1; m <= 12; m++) {
+  let d = nextWork(dayOf(m, 5));
+  [["情資蒐集", "L4-45", "A08", ["intel", "review", "kpi", "mrep"]], ["日誌審查・機房工作日誌", "日誌", "A12", ["review", "kpi", "mrep"]],
+   ["SI／EDR 監控報告", "監控報告", "A10", ["review", "kpi", "mrep"]], ["KPI 統計", "L4-18", "A14", ["kpi", "mrep"]],
+   ["資安工作月報", "報告D", "A01", ["mrep"]]]
+    .forEach(([n, c, k, r]) => { add(d, "month", n, c, k, r); d = nextWork(d + 1); });
+}
+// 每天（工作日）
+for (let d = 0; d < DAYS; d++) if (isWork(d)) add(d, "day", "每日例行檢查", "機房工作日誌", "A12,A13,A10", ["log", "chk", "judge", "rec"], { quiet: true });
+
+// 資安事件（劇情）
+add(dayOf(7, 21), "alert", "EDR 告警：疑似勒索軟體", "L4-46", "A12", ["log", "chk", "judge", "inc", "resp"], { alarm: true });
+add(dayOf(7, 22), "alert", "緊急處理小組應變", "L4-47", "A12", ["inc", "resp"]);
+add(dayOf(7, 23), "alert", "備份回存與復原", "L4-37", "A13", ["resp", "car"]);
+add(dayOf(7, 27), "alert", "根因分析與矯正", "L4-16", "A14", ["car"]);
+
+// 不定期：依權重模擬（固定亂數種子，每次播放都一樣）
+const ADHOC = [
+  ["新人報到：保密切結・帳號", "L4-08・24", "A02,A05", 5], ["人員離職：切結・交接", "L4-11・10", "A02,A04", 3],
+  ["帳號權限異動", "L4-24", "A05", 6], ["防火牆規則申請", "L4-36", "A10", 4], ["外部設備連線申請", "L4-34", "A10", 3],
+  ["廠商進出機房", "L4-28", "A07", 6], ["設備進出安全區域", "L4-30", "A04", 3], ["網通／環控設備保養", "保養紀錄", "A07", 3],
+  ["系統變更申請", "L4-20", "A06", 5], ["資料庫資料異動", "L4-56", "A09", 3], ["應用系統維護申請", "L4-58", "A09", 3],
+  ["新系統開發評估", "L4-59・60", "A09", 1], ["系統上線測試", "L4-61・57", "A09", 1], ["專案安全要求識別", "L4-52", "A09", 2],
+  ["合約資安要求識別", "L4-55", "A11,A15", 2], ["設備報廢資料清除", "L4-31", "A04,A03", 2], ["個資使用宣告", "個資宣告", "A03,A15", 2],
+  ["文件修訂建議", "L4-07", "A01", 1],
+];
+(function () {
+  let s = 2027;
+  const rnd = () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const W = ADHOC.reduce((a, x) => a + x[3], 0);
+  for (let d = 0; d < DAYS; d++) {
+    if (!isWork(d) || rnd() > 0.3) continue;
+    let p = rnd() * W, k = 0; while ((p -= ADHOC[k][3]) > 0) k++;
+    add(d, "adhoc", ADHOC[k][0], ADHOC[k][1], ADHOC[k][2], ["req", "app", "exe", "rec"]);
+  }
+})();
+EV.sort((a, b) => a.d - b.d || FORDER.indexOf(b.freq) - FORDER.indexOf(a.freq));
+const byDay = Array.from({ length: DAYS }, () => []);
+EV.forEach(e => byDay[e.d].push(e));
+
+/* ---------- guide script: [MM-DD, who, face, lens, text] ---------- */
+const GUIDE = [
+  ["01-01", "R", "arale_cheer", "time", "歡迎來到 ISMS 工作地圖！這個大圓盤就是 2027 這一整年，指針每走一格就是一天。"],
+  ["01-02", "A", "allan_smile", "time", "最內圈是不定期的申請，往外是每天、每月、每季、半年，最外圈是每年的工作。每做完一件事，中間的紀錄庫就多一筆紀錄。"],
+  ["01-11", "A", "allan_point", "time", "一月先訂年度資安目標，再排好整年的教育訓練計畫。"],
+  ["02-03", "R", "arale_explain", "time", "二月要更新好多清單：委員會名單、備份清單、軟體清冊、金鑰憑證、雲服務，還有法規清單！"],
+  ["02-15", "A", "allan_point", "flow", "換個角度看流程。紅線是各種申請，藍綠線是每天的監控，黃線是每月的量測，紫線是每季追蹤，綠線是一年一圈的 PDCA。"],
+  ["03-02", "R", "arale_thumb", "flow", "你看，每一張申請單都會從提出、核准、執行，最後流進紀錄歸檔。"],
+  ["03-23", "A", "allan_smile", "time", "三月開關注者會議，盤點業務流程，做組織全景分析。"],
+  ["04-13", "R", "arale_explain", "time", "四月修訂文件，把去年的稽核發現和新的法規，寫進程序書。"],
+  ["05-03", "A", "allan_point", "cat", "再換一個角度：ISMS 的 15 項運作能力。哪一區在忙，那一區就會亮起來，下面的小長條是每個月的工作量。"],
+  ["05-18", "R", "arale_cheer", "cat", "五月全員資安宣導，人資安全這一區亮起來了！"],
+  ["06-14", "A", "allan_point", "time", "六月是半年檢查：清查特權帳號，再檢視防火牆政策和日誌。"],
+  ["07-13", "R", "arale_explain", "cat", "七月請各單位主管確認一般使用者的權限，存取管理這一區也忙起來囉。"],
+  ["07-21", "R", "arale_cry", "flow", "糟糕！EDR 告警，檔案伺服器疑似中了勒索軟體！"],
+  ["07-22", "A", "allan_wow", "flow", "別慌，看紅色的事件路線：異常研判之後轉進事件通報、應變復原，最後開矯正處理單。"],
+  ["08-19", "A", "allan_point", "time", "八月做資產盤點和風險評鑑。事件的矯正結果，也要回饋到風險評鑑。"],
+  ["09-14", "R", "arale_explain", "cat", "九月有弱點掃描、IT 人員專業課程，還要評鑑供應商。"],
+  ["10-19", "A", "allan_smile", "time", "十月營運持續演練，順便測試備份到底能不能還原。"],
+  ["11-16", "R", "arale_wow", "cat", "十一月內部稽核！每一區都要拿出紀錄給稽核員看。"],
+  ["11-26", "A", "allan_point", "flow", "管理審查時，把一整年的月報、KPI 和稽核結果，交給高階主管做決策。"],
+  ["12-07", "R", "arale_cheer", "time", "十二月外部稽核，驗證公司的稽核員來了！"],
+  ["12-08", "A", "allan_laugh", "time", "看看中間的紀錄庫：一整年累積的紀錄，就是 ISMS 確實在運作的證據。"],
+  ["12-28", "R", "arale_thumb", "time", "一年轉完一圈，明年一月，PDCA 再出發！"],
+].map(([md, w, f, lens, t], i) => ({ d: dayOf(+md.slice(0, 2), +md.slice(3)), w, f, lens, t, i, a: AUDIO[i] }));
+
+/* ================= helpers ================= */
+const $ = id => document.getElementById(id);
+const NS = "http://www.w3.org/2000/svg";
+function S(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.append(e); return e; }
+const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ================= time lens ================= */
+const CX = 470, CY = 318;
+const ang = d => -Math.PI / 2 + (d / DAYS) * Math.PI * 2;
+const pt = (r, a) => [CX + r * Math.cos(a), CY + r * Math.sin(a)];
+const svgT = $("svgTime");
+const gTrack = S("g", {}, svgT);
+const wedge = S("path", { fill: "rgba(255,255,255,.035)" }, gTrack);
+FORDER.forEach(f => S("circle", { cx: CX, cy: CY, r: FREQ[f].r, fill: "none", stroke: FREQ[f].hex, "stroke-opacity": .16, "stroke-width": 14 }, gTrack));
+for (let m = 0; m < 12; m++) {
+  const a0 = ang(dayOf(m + 1, 1)), a1 = ang(m === 11 ? DAYS : dayOf(m + 2, 1)), am = (a0 + a1) / 2;
+  const [x1, y1] = pt(118, a0), [x2, y2] = pt(306, a0);
+  S("line", { x1, y1, x2, y2, stroke: "rgba(255,255,255,.1)", "stroke-width": 1 }, gTrack);
+  const [tx, ty] = pt(292, am);
+  const t = S("text", { x: tx, y: ty + 5, "text-anchor": "middle", "font-size": 15, "font-weight": 900, fill: "#eef3ff" }, gTrack); t.textContent = (m + 1) + "月";
+}
+const dailyDots = [];
+for (let d = 0; d < DAYS; d++) if (isWork(d)) { const [x, y] = pt(FREQ.day.r, ang(d + .5)); dailyDots[d] = S("circle", { cx: x, cy: y, r: 2.1, fill: "rgba(255,255,255,.14)" }, gTrack); }
+const gMarks = S("g", {}, svgT);
+const hand = S("line", { x1: CX, y1: CY, x2: CX, y2: CY - 312, stroke: "#fff", "stroke-width": 2.5, "stroke-linecap": "round" }, svgT);
+const knob = S("circle", { cx: CX, cy: CY - 312, r: 6, fill: "#fff" }, svgT);
+const vaultG = S("g", {}, svgT);
+S("circle", { cx: CX, cy: CY, r: 98, fill: "#0e1833", stroke: "#eef3ff", "stroke-width": 2 }, vaultG);
+const vt1 = S("text", { x: CX, y: CY - 30, "text-anchor": "middle", "font-size": 15, fill: "#9fb0d6", "font-weight": 700 }, vaultG); vt1.textContent = "紀錄庫";
+const vCount = S("text", { x: CX, y: CY + 18, "text-anchor": "middle", "font-size": 46, "font-weight": 700, "font-family": "JetBrains Mono, monospace" }, vaultG); vCount.textContent = "0";
+const vt2 = S("text", { x: CX, y: CY + 44, "text-anchor": "middle", "font-size": 14, fill: "#9fb0d6" }, vaultG); vt2.textContent = "筆紀錄・稽核證據";
+$("legendTime").innerHTML = '<div class="h">由內到外</div>' + FORDER.map(f => `<div><i style="background:${FREQ[f].color}"></i>${FREQ[f].name}<span>${{ adhoc: "申請、變更", day: "例行檢查", month: "月報、KPI", quarter: "顧問建議", half: "6・12 月", year: "PDCA" }[f]}</span></div>`).join("");
+
+function timeMarker(e, jitter) {
+  const f = FREQ[e.freq];
+  const a = ang(e.d + .5);
+  const r = e.freq === "adhoc" || e.freq === "alert" ? f.r + (jitter - .5) * 18 : f.r;
+  const [x, y] = pt(r, a);
+  S("circle", { cx: x, cy: y, r: e.freq === "year" ? 7 : e.freq === "adhoc" ? 3.5 : e.freq === "alert" ? 8 : 5.5, fill: f.hex, stroke: "#12203f", "stroke-width": 1.5 }, gMarks);
+  return [x, y];
+}
+function timeChip(e, x, y) {
+  const c = document.createElement("div");
+  c.className = "chip"; c.style.background = FREQ[e.freq].hex; c.style.left = x + "px"; c.style.top = y + "px";
+  c.textContent = e.name; const sm = document.createElement("small"); sm.textContent = e.code; c.append(sm);
+  $("chipsTime").append(c);
+  setTimeout(() => { c.classList.add("go"); c.style.left = CX + "px"; c.style.top = CY + "px"; }, 1500);
+  setTimeout(() => { c.remove(); vaultG.classList.remove("vault-bump"); void vaultG.getBBox(); vaultG.classList.add("vault-bump"); }, 2300);
+}
+
+/* ================= flow lens ================= */
+const svgF = $("svgFlow");
+function routePts(ids) {
+  const out = [];
+  ids.forEach((id, i) => {
+    const [x, y] = ST[id];
+    if (i > 0) { const [px, py] = ST[ids[i - 1]]; if (px !== x && py !== y) out.push([x, py]); }
+    out.push([x, y]);
+  });
+  return out;
+}
+const gLines = S("g", {}, svgF);
+S("path", { d: `M${ST.mrep[0]},${ST.mrep[1]} L${ST.mr[0]},${ST.mr[1]}`, stroke: "#9fb0d6", "stroke-width": 2, "stroke-dasharray": "5 6", fill: "none", opacity: .6 }, gLines);
+S("path", { d: `M${ST.car[0]},${ST.car[1]} C${ST.car[0] + 120},${ST.car[1] + 20} ${ST.risk[0] - 60},${ST.risk[1] - 90} ${ST.risk[0]},${ST.risk[1]}`, stroke: "#9fb0d6", "stroke-width": 2, "stroke-dasharray": "5 6", fill: "none", opacity: .6 }, gLines);
+LINES.forEach(([id, , col, ids, dash]) => {
+  const p = routePts(ids).map((q, i) => (i ? "L" : "M") + q[0] + "," + q[1]).join(" ");
+  S("path", { d: p, stroke: col, "stroke-width": 7, fill: "none", "stroke-linejoin": "round", "stroke-linecap": "round", opacity: .9, "stroke-dasharray": dash ? "12 8" : "none" }, gLines);
+});
+const gTok = S("g", {}, svgF);
+const stEls = {}, stCnt = {};
+const gSt = S("g", {}, svgF);
+Object.entries(ST).forEach(([id, [x, y, label, lp]]) => {
+  const g = S("g", { class: "station", tabindex: 0, role: "button", "aria-label": label }, gSt);
+  const big = id === "rec" || id === "mrep" || id === "mr";
+  S("circle", { class: "dot", cx: x, cy: y, r: big ? 13 : 9, fill: "#12203f", stroke: "#eef3ff", "stroke-width": big ? 4 : 3 }, g);
+  const pos = { b: [x, y + 28, "middle"], a: [x, y - 20, "middle"], r: [x + 18, y + 5, "start"] }[lp];
+  const t = S("text", { x: pos[0], y: pos[1], "text-anchor": pos[2] }, g); t.textContent = label;
+  const c = S("text", { class: "cnt", x: pos[0], y: pos[1] + 15, "text-anchor": pos[2] }, g); c.textContent = "0 件";
+  stEls[id] = g; stCnt[id] = c;
+  const show = () => showStation(id);
+  g.addEventListener("click", show);
+  g.addEventListener("keydown", ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); show(); } });
+});
+$("legendFlow").innerHTML = LINES.map(([, n, c, , dash]) => `<div><i style="background:${dash ? `repeating-linear-gradient(90deg,${c} 0 7px,transparent 7px 11px)` : c}"></i>${n}</div>`).join("");
+const tokens = [];
+function spawnToken(e) {
+  const pts = routePts(e.route);
+  const col = FREQ[e.freq].hex;
+  const g = S("g", {}, gTok);
+  const dot = S("circle", { r: e.quiet ? 4 : 7, fill: col, stroke: "#12203f", "stroke-width": 2 }, g);
+  let label = null;
+  if (!e.quiet) { label = S("text", { class: "tok-label", fill: col, x: 10, y: -10 }, g); label.textContent = e.name; }
+  const segs = []; let len = 0;
+  for (let i = 1; i < pts.length; i++) { const l = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); segs.push(l); len += l; }
+  tokens.push({ g, pts, segs, len, t0: performance.now(), speed: e.quiet ? 260 : 170, e, hit: 0 });
+  if (pts.length === 1) g.setAttribute("transform", `translate(${pts[0][0]},${pts[0][1]})`);
+}
+function stepTokens(now) {
+  for (let k = tokens.length - 1; k >= 0; k--) {
+    const tk = tokens[k];
+    let dist = Math.max(0, (now - tk.t0) / 1000 * tk.speed);
+    if (dist >= tk.len || tk.segs.length === 0) {
+      const [x, y] = tk.pts[tk.pts.length - 1]; tk.g.setAttribute("transform", `translate(${x},${y})`);
+      if (dist >= tk.len + 120) { tk.g.remove(); tokens.splice(k, 1); }
+      continue;
+    }
+    let i = 0; while (i < tk.segs.length - 1 && dist > tk.segs[i]) { dist -= tk.segs[i]; i++; }
+    const a = tk.pts[i], b = tk.pts[i + 1], f = dist / tk.segs[i];
+    tk.g.setAttribute("transform", `translate(${a[0] + (b[0] - a[0]) * f},${a[1] + (b[1] - a[1]) * f})`);
+  }
+}
+function ping(id) { const g = stEls[id]; if (!g) return; g.classList.remove("ping"); void g.getBBox(); g.classList.add("ping"); }
+
+/* ================= category lens ================= */
+const tilesEl = $("tiles");
+const catState = {};
+CATS.forEach(([code, name, en]) => {
+  const t = document.createElement("div");
+  t.className = "tile"; t.tabIndex = 0; t.setAttribute("role", "button"); t.setAttribute("aria-label", code + " " + name);
+  t.innerHTML = `<div class="hd"><i>${code}</i><b>${name}</b></div><div class="en">${en}</div><div class="num"><span>0</span><small>件</small></div><div class="bars">${"<span></span>".repeat(12)}</div><div class="last">尚無紀錄</div><div class="glow"></div>`;
+  t.addEventListener("click", () => showCat(code));
+  t.addEventListener("keydown", ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); showCat(code); } });
+  tilesEl.append(t);
+  catState[code] = { el: t, num: t.querySelector(".num span"), bars: [...t.querySelectorAll(".bars span")], last: t.querySelector(".last"), glow: t.querySelector(".glow"), total: 0, months: Array(12).fill(0) };
+});
+function renderBars(curM) {
+  CATS.forEach(([c]) => {
+    const mx = Math.max(3, ...catState[c].months);
+    catState[c].bars.forEach((b, m) => { b.style.height = Math.max(2, catState[c].months[m] / mx * 34) + "px"; b.classList.toggle("cur", m === curM); });
+  });
+}
+
+/* ================= side ================= */
+const feedEl = $("feed");
+const counts = {};
+$("counts").innerHTML = FORDER.map(f => `<div><span><i style="background:${FREQ[f].color}"></i>${FREQ[f].name}</span><b id="c-${f}">0</b></div>`).join("");
+FORDER.forEach(f => counts[f] = 0); counts.alert = 0;
+let total = 0;
+function feedRow(e, animate) {
+  const r = document.createElement("div");
+  r.className = "row"; if (!animate) r.style.animation = "none";
+  r.innerHTML = `<time>${mmdd(e.d)}</time><i style="background:${FREQ[e.freq].hex}"></i><span></span>`;
+  const sp = r.querySelector("span"); sp.textContent = e.name; const sm = document.createElement("small"); sm.textContent = e.code; sp.append(sm);
+  feedEl.prepend(r);
+  while (feedEl.children.length > 11) feedEl.lastChild.remove();
+}
+
+/* ================= state ================= */
+let simDay = 0, lastDay = -1, playing = false, secPerDay = 0.38, lens = "time", tour = true, soundOn = true;
+let queue = [], nextRelease = 0, guideQ = [], guideNow = null, guideUntil = 0, audio = null, ended = false;
+const stationCount = {};
+
+function apply(e, animate) {
+  total++; const fk = e.freq === "alert" ? "adhoc" : e.freq; counts[fk]++;
+  const m = dateOf(e.d).getMonth();
+  e.cats.forEach(c => { const s = catState[c]; s.total++; s.months[m]++; s.last.textContent = mmdd(e.d) + " " + e.name; });
+  e.route.forEach(id => stationCount[id] = (stationCount[id] || 0) + 1);
+  if (e.freq === "day") { if (dailyDots[e.d]) dailyDots[e.d].setAttribute("fill", FREQ.day.hex); }
+  else {
+    const [x, y] = timeMarker(e, ((e.d * 9301 + e.name.length * 49297) % 233280) / 233280);
+    if (animate) { feedRow(e, true); if (lens === "time") timeChip(e, x, y); }
+  }
+  if (!animate) return;
+  if (lens === "flow") { spawnToken(e); e.route.forEach((id, i) => setTimeout(() => ping(id), i * 380)); }
+  if (lens === "cat") e.cats.forEach(c => { const s = catState[c]; s.glow.style.boxShadow = `inset 0 0 0 3px ${FREQ[e.freq].hex}, 0 0 24px ${FREQ[e.freq].hex}`; s.glow.style.background = FREQ[e.freq].hex + "22"; s.el.classList.remove("flash"); void s.el.offsetWidth; s.el.classList.add("flash"); });
+  if (e.alarm) { const a = $("alarm"); a.classList.remove("on"); void a.offsetWidth; a.classList.add("on"); }
+  refreshNumbers();
+}
+function refreshNumbers() {
+  vCount.textContent = total;
+  $("totalRec").textContent = total + " 筆";
+  FORDER.forEach(f => $("c-" + f).textContent = counts[f]);
+  CATS.forEach(([c]) => catState[c].num.textContent = catState[c].total);
+  Object.keys(stCnt).forEach(id => stCnt[id].textContent = (stationCount[id] || 0) + " 件");
+  renderBars(dateOf(Math.min(DAYS - 1, Math.floor(simDay))).getMonth());
+}
+
+function resetTo(day) {
+  stopGuide(); queue = []; tokens.forEach(t => t.g.remove()); tokens.length = 0; $("chipsTime").innerHTML = "";
+  gMarks.innerHTML = ""; dailyDots.forEach(c => c && c.setAttribute("fill", "rgba(255,255,255,.14)"));
+  total = 0; FORDER.forEach(f => counts[f] = 0); Object.keys(stationCount).forEach(k => delete stationCount[k]);
+  CATS.forEach(([c]) => { const s = catState[c]; s.total = 0; s.months.fill(0); s.last.textContent = "尚無紀錄"; });
+  feedEl.innerHTML = "";
+  simDay = day; lastDay = Math.floor(day) - 1;
+  const past = EV.filter(e => e.d <= lastDay);
+  past.forEach(e => apply(e, false));
+  past.filter(e => e.freq !== "day").slice(-11).forEach(e => feedRow(e, false));
+  guideQ = []; GUIDE.forEach(g => g.done = g.d <= lastDay);
+  ended = false; $("summary").hidden = true; bub.classList.add("idle");
+  refreshNumbers(); drawClock(true);
+}
+
+function processDay(d) {
+  const evs = byDay[d];
+  evs.forEach(e => queue.push(e));
+  GUIDE.filter(g => g.d === d && !g.done).forEach(g => guideQ.push(g));
+}
+
+/* ---------- guide narration ---------- */
+const bub = $("bub");
+function startGuide(g) {
+  g.done = true; guideNow = g;
+  if (tour && g.lens) setLens(g.lens, true);
+  bub.className = "bub " + g.w; $("bubWho").textContent = g.w === "A" ? "Allan 顧問" : "阿拉蕾"; $("bubText").textContent = g.t;
+  $("gA").src = SPRITES[g.w === "A" ? g.f : "allan_smile"]; $("gR").src = SPRITES[g.w === "R" ? g.f : "arale_thumb"];
+  $("gA").className = "A " + (g.w === "A" ? "talk" : "quiet"); $("gR").className = "R " + (g.w === "R" ? "talk" : "quiet");
+  const dur = g.a ? g.a.dur : 2 + g.t.length * 0.2;
+  guideUntil = performance.now() + dur * 1000 + 500;
+  if (soundOn && g.a) { audio = new Audio(g.a.src); audio.play().catch(() => {}); audio.onended = () => { guideUntil = Math.min(guideUntil, performance.now() + 500); }; }
+}
+function stopGuide() { if (audio) { audio.pause(); audio = null; } guideNow = null; $("gA").className = "A quiet"; $("gR").className = "R quiet"; }
+function idleGuide() { stopGuide(); bub.classList.add("idle"); }
+
+/* ---------- lens ---------- */
+function setLens(l, fromTour) {
+  lens = l;
+  ["time", "flow", "cat"].forEach(k => $("v-" + k).classList.toggle("active", k === l));
+  document.querySelectorAll("[data-lens]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.lens === l)));
+  if (!fromTour && tour) { tour = false; $("tour").setAttribute("aria-pressed", "false"); $("tour").textContent = "導覽自動切換視角：關"; }
+}
+
+/* ---------- clock & scrubber ---------- */
+let shownDay = -1, shownMonth = -1;
+function drawClock(force) {
+  const a = ang(Math.min(simDay, DAYS));
+  const [x, y] = pt(312, a);
+  hand.setAttribute("x2", x); hand.setAttribute("y2", y); knob.setAttribute("cx", x); knob.setAttribute("cy", y);
+  const [sx, sy] = pt(306, -Math.PI / 2), large = (a + Math.PI / 2) > Math.PI ? 1 : 0;
+  wedge.setAttribute("d", simDay <= 0 ? "" : `M${CX},${CY} L${sx},${sy} A306,306 0 ${large} 1 ${x},${y} Z`);
+  const p = Math.min(1, simDay / DAYS) * 100;
+  $("sFill").style.width = p + "%"; $("sKnob").style.left = p + "%";
+  const d = Math.min(DAYS - 1, Math.floor(simDay));
+  if (d !== shownDay || force) {
+    shownDay = d; const t = dateOf(d);
+    $("dDate").textContent = `2027/${pad(t.getMonth() + 1)}/${pad(t.getDate())}`;
+    $("dWeek").textContent = "週" + WEEK[t.getDay()];
+    $("dTheme").textContent = THEMES[t.getMonth()];
+    $("feedDay").textContent = mmdd(d);
+    $("scrub").setAttribute("aria-valuenow", d + 1);
+    if (t.getMonth() !== shownMonth || force) { shownMonth = t.getMonth(); renderMonth(shownMonth); renderBars(shownMonth); }
+  }
+}
+
+/* ---------- main loop ---------- */
+let last = performance.now();
+function loop(now) {
+  try { tick(now); } catch (err) { console.error(err); }
+  requestAnimationFrame(loop);
+}
+function tick(now) {
+  const dt = Math.min(.1, (now - last) / 1000); last = now;
+  if (playing && !ended) {
+    const narr = guideNow && now < guideUntil;
+    if (guideNow && now >= guideUntil) { guideNow = null; $("gA").className = "A quiet"; $("gR").className = "R quiet"; }
+    if (!guideNow && guideQ.length) startGuide(guideQ.shift());
+    const slow = guideNow ? 0.12 : 1;
+    simDay += dt / secPerDay * slow;
+    while (lastDay < Math.min(DAYS - 1, Math.floor(simDay))) { lastDay++; processDay(lastDay); }
+    // release queued events with a little spacing so each one can be seen
+    if (queue.length > 14) queue.splice(0, queue.length - 14).forEach(e => apply(e, false));
+    if (queue.length && now >= nextRelease) {
+      const e = queue.shift(); apply(e, true);
+      nextRelease = now + (e.quiet ? 60 : Math.max(120, 420 * secPerDay / .38));
+    }
+    if (simDay >= DAYS && !queue.length && !guideNow && !guideQ.length) finish();
+    drawClock();
+  }
+  stepTokens(now);
+}
+function setPlaying(p) {
+  playing = p; $("play").textContent = p ? "❚❚ 暫停" : "▶ 播放"; $("cover").hidden = true;
+  if (audio) { if (p && soundOn) audio.play().catch(() => {}); else audio.pause(); }
+  if (p && guideNow) guideUntil = performance.now() + 1500 + (audio && !audio.paused ? (audio.duration - audio.currentTime) * 1000 : 0);
+}
+function finish() {
+  ended = true; playing = false; $("play").textContent = "↺ 重播"; simDay = DAYS; drawClock(true);
+  const s = $("summary");
+  s.innerHTML = `<h2>2027 年 ISMS 工作總結</h2><p>一整年下來，ISMS 人員留下了這些紀錄：</p><div class="grid">${FORDER.map(f => `<div style="border-color:${FREQ[f].hex}"><b>${counts[f]}</b><span>${FREQ[f].name}${f === "adhoc" ? "（含資安事件）" : ""}</span></div>`).join("")}</div><div class="total">合計 <b>${total}</b> 筆紀錄＝稽核時可以拿出來的證據</div><div class="credit">製作：Allan Lo｜2026/10/16　導覽：Allan 顧問、AI 小助手阿拉蕾</div><button type="button" id="again">↺ 再走一年</button>`;
+  s.hidden = false; $("again").addEventListener("click", () => { resetTo(0); setLens("time", true); setPlaying(true); });
+}
+
+/* ---------- below-stage panels ---------- */
+function renderMonth(m) {
+  $("mTitle").textContent = `${m + 1} 月的 ISMS 工作`;
+  document.querySelectorAll("#monthBtns button").forEach((b, k) => b.classList.toggle("cur", k === m));
+  const inM = EV.filter(e => dateOf(e.d).getMonth() === m);
+  const grp = f => inM.filter(e => e.freq === f);
+  const seen = new Set();
+  const uniq = arr => arr.filter(e => { const k = e.name; if (seen.has(k)) return false; seen.add(k); return true; });
+  const blocks = [];
+  const li = e => `<li><time>${mmdd(e.d)}</time><span>${e.name}${e.adv ? '<span class="adv">顧問建議</span>' : ""}</span><code>${e.code}</code></li>`;
+  [["year", "每年"], ["half", "半年"], ["quarter", "每季"], ["month", "每月"], ["alert", "資安事件（劇情）"]].forEach(([f, n]) => {
+    const list = grp(f); if (!list.length) return;
+    blocks.push(`<div class="mgrp"><h4><i style="background:${FREQ[f].hex}"></i>${n}</h4><ul>${list.map(li).join("")}</ul></div>`);
+  });
+  const ad = uniq(grp("adhoc"));
+  blocks.push(`<div class="mgrp"><h4><i style="background:${FREQ.day.hex}"></i>每天（工作日）</h4><ul><li><time>每日</time><span>EDR／防毒告警、備份成功確認、異常登入與日誌、主機與網路監控</span><code>機房工作日誌</code></li></ul></div>`);
+  blocks.push(`<div class="mgrp"><h4><i style="background:${FREQ.adhoc.hex}"></i>不定期（本月模擬發生 ${grp("adhoc").length} 件）</h4><ul>${ad.slice(0, 8).map(li).join("")}</ul></div>`);
+  $("mlist").innerHTML = blocks.join("");
+}
+function showStation(id) {
+  const [, , label] = ST[id];
+  const ex = []; const seen = new Set();
+  EV.forEach(e => { if (e.route.includes(id) && !seen.has(e.name) && e.freq !== "day") { seen.add(e.name); ex.push(e); } });
+  $("detail").innerHTML = `<h2>${label}</h2><div class="meta">工作流程站點・本年累計經過 ${stationCount[id] || 0} 件</div><p style="margin:0 0 8px">${ST_INFO[id]}</p><ul>${ex.slice(0, 10).map(e => `<li>${e.name} <code>${e.code}</code>　<span style="color:${FREQ[e.freq].hex === "#ffc93c" ? "var(--sub)" : "var(--sub)"}">${FREQ[e.freq].name}</span></li>`).join("") || "<li>每日例行檢查（工作日）</li>"}</ul>`;
+}
+function showCat(code) {
+  const c = CATS.find(x => x[0] === code);
+  const seen = new Set(); const list = [];
+  EV.forEach(e => { if (e.cats.includes(code) && !seen.has(e.name)) { seen.add(e.name); list.push(e); } });
+  list.sort((a, b) => FORDER.indexOf(a.freq === "alert" ? "adhoc" : a.freq) - FORDER.indexOf(b.freq === "alert" ? "adhoc" : b.freq));
+  $("detail").innerHTML = `<h2>${c[0]} ${c[1]}</h2><div class="meta">${c[2]}・本年累計 ${catState[code].total} 件</div><ul>${list.map(e => `<li><b>${FREQ[e.freq].name}</b>｜${e.name} <code>${e.code}</code>${e.adv ? "（顧問建議）" : ""}</li>`).join("")}</ul>`;
+}
+
+/* ================= wiring ================= */
+const wrap = $("wrap"), stage = $("stage");
+function fit() { stage.style.setProperty("--s", wrap.clientWidth / 1280); }
+new ResizeObserver(fit).observe(wrap); fit();
+$("gA").src = SPRITES.allan_smile; $("gR").src = SPRITES.arale_thumb;
+$("monthBtns").innerHTML = Array.from({ length: 12 }, (_, m) => `<button type="button">${m + 1}月</button>`).join("");
+document.querySelectorAll("#monthBtns button").forEach((b, m) => b.addEventListener("click", () => { resetTo(dayOf(m + 1, 1)); if (!playing) setPlaying(true); }));
+$("cover").addEventListener("click", () => { resetTo(0); setPlaying(true); });
+$("play").addEventListener("click", () => { if (ended) { resetTo(0); setLens("time", true); } setPlaying(!playing); });
+document.querySelectorAll("[data-lens]").forEach(b => b.addEventListener("click", () => setLens(b.dataset.lens, false)));
+document.querySelectorAll("#speed button").forEach(b => b.addEventListener("click", () => {
+  secPerDay = +b.dataset.v; document.querySelectorAll("#speed button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+}));
+$("tour").addEventListener("click", () => { tour = !tour; $("tour").setAttribute("aria-pressed", String(tour)); $("tour").textContent = "導覽自動切換視角：" + (tour ? "開" : "關"); });
+$("sound").addEventListener("click", () => {
+  soundOn = !soundOn; $("sound").setAttribute("aria-pressed", String(soundOn)); $("sound").textContent = "聲音：" + (soundOn ? "開" : "關");
+  if (!soundOn && audio) audio.pause();
+});
+const scrub = $("scrub");
+function scrubAt(e) { const r = scrub.getBoundingClientRect(); resetTo(Math.max(0, Math.min(DAYS - 1, Math.floor((e.clientX - r.left) / r.width * DAYS)))); }
+scrub.addEventListener("pointerdown", e => { scrubAt(e); scrub.setPointerCapture(e.pointerId); });
+scrub.addEventListener("pointermove", e => { if (e.buttons) scrubAt(e); });
+scrub.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") { resetTo(Math.min(DAYS - 1, Math.floor(simDay) + 7)); e.preventDefault(); }
+  if (e.key === "ArrowLeft") { resetTo(Math.max(0, Math.floor(simDay) - 7)); e.preventDefault(); }
+});
+
+// resting first frame: early February already under way, so the map shows real content before anyone presses play
+resetTo(dayOf(2, 20));
+idleGuide();
+requestAnimationFrame(loop);
+</script>
