@@ -1,0 +1,755 @@
+<title>ISMS 大富翁</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="ISMS 桌遊：1～4 人擲骰子走完資安的一年，蒐集紀錄卡、應付資安事件與稽核，年底外部稽核決定能否取得驗證。製作：Allan Lo，2026/10/16">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: a printed-board look. Square 1000x1000 board (scaled) with 24 spaces around a 5x5 centre holding the host,
+   the die and the three card decks; a player console sits beside it (below it on phones); cards open as readable
+   HTML dialogs over everything. The board keeps one light cardstock look in both themes; page chrome follows the theme. */
+:root {
+  /* board world */
+  --ink: #1f2540;
+  --felt: #f6efe0;
+  --felt-2: #efe4cc;
+  --c-month: #3f9e3a;
+  --c-daily: #ee6a43;
+  --c-event: #e0434b;
+  --c-monthly: #d79b00;
+  --c-help: #159f98;
+  --c-audit: #2b3f78;
+  --c-start: #7d55d8;
+  --gold: #ffc53d;
+
+  /* page chrome */
+  --bg: #f1efe9; --fg: #1d2440; --sub: #5a6380; --line: #d6d3c8; --card: #ffffff; --accent: #11808a; --accent-ink: #ffffff; --chip: #ebe8df; --soft: #f8f6f0;
+  --f-display: "Huninn", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --f-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #12162a; --fg: #e9ecf6; --sub: #a5adc6; --line: #2d3555; --card: #1a2039; --accent: #3cc6cf; --accent-ink: #0b1222; --chip: #252d4b; --soft: #1e2542; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #12162a; --fg: #e9ecf6; --sub: #a5adc6; --line: #2d3555; --card: #1a2039; --accent: #3cc6cf; --accent-ink: #0b1222; --chip: #252d4b; --soft: #1e2542; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 15px; line-height: 1.6; }
+.page { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 22px 48px; display: grid; gap: 16px; }
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 24px; }
+header.top .eyebrow { font-size: 12px; letter-spacing: .14em; color: var(--sub); font-weight: 700; }
+header.top h1 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: clamp(28px, 4.4vw, 42px); line-height: 1.15; }
+header.top h1 em { font-style: normal; color: var(--accent); }
+header.top .by { font-size: 13px; color: var(--sub); text-align: right; }
+header.top .by b { color: var(--fg); }
+
+.game { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+@media (max-width: 900px) { .game { grid-template-columns: 1fr; } }
+
+/* ---------- board ---------- */
+.board-wrap { position: relative; width: 100%; max-width: 100%; aspect-ratio: 1; overflow: hidden; border-radius: 18px; border: 4px solid var(--ink); background: var(--felt); box-shadow: 0 8px 0 var(--ink); }
+.board { position: absolute; left: 0; top: 0; width: 1000px; height: 1000px; transform-origin: 0 0; transform: scale(var(--s, .5)); color: var(--ink); font-family: var(--f-body);
+  background: repeating-linear-gradient(45deg, var(--felt) 0 18px, var(--felt-2) 18px 19px); }
+.cell { position: absolute; width: 142.857px; height: 142.857px; border: 2px solid var(--ink); background: #fffaf0; display: grid; grid-template-rows: 30px 1fr; overflow: hidden; }
+.cell .band { display: flex; align-items: center; justify-content: space-between; padding: 0 8px; color: #fff; font-weight: 900; font-size: 15px; letter-spacing: .04em; }
+.cell .band small { font-family: var(--f-mono); font-size: 12px; opacity: .9; }
+.cell .inner { padding: 6px 8px; display: grid; align-content: center; justify-items: center; text-align: center; gap: 2px; }
+.cell .glyph { font-family: var(--f-display); font-size: 30px; line-height: 1; }
+.cell .tt { font-family: var(--f-display); font-size: 19px; line-height: 1.2; }
+.cell .sub { font-size: 12px; color: #5a6380; line-height: 1.25; }
+.cell.month .band { background: var(--c-month); } .cell.month .glyph { color: var(--c-month); }
+.cell.daily .band { background: var(--c-daily); } .cell.daily .glyph { color: var(--c-daily); }
+.cell.event .band { background: var(--c-event); } .cell.event .glyph { color: var(--c-event); }
+.cell.monthly .band { background: var(--c-monthly); } .cell.monthly .glyph { color: var(--c-monthly); }
+.cell.help .band { background: var(--c-help); } .cell.help .glyph { color: var(--c-help); }
+.cell.audit .band { background: var(--c-audit); } .cell.audit .glyph { color: var(--c-audit); }
+.cell.start { background: #f1eaff; } .cell.start .band { background: var(--c-start); }
+.cell.lit { box-shadow: inset 0 0 0 6px var(--gold); }
+.center { position: absolute; left: 142.857px; top: 142.857px; width: 714.286px; height: 714.286px; padding: 26px; display: grid; grid-template-rows: auto 1fr auto; gap: 10px; }
+.logo { text-align: center; }
+.logo .k { font-size: 18px; font-weight: 900; letter-spacing: .3em; color: #5a6380; }
+.logo h2 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 66px; line-height: 1.05; text-shadow: 4px 4px 0 var(--gold); }
+.logo p { margin: 2px 0 0; font-size: 19px; font-weight: 700; }
+.mid { display: grid; grid-template-columns: 210px 1fr; gap: 14px; align-items: center; }
+.host { position: relative; display: grid; justify-items: center; }
+.host img { height: 230px; filter: drop-shadow(0 6px 4px rgba(0,0,0,.2)); }
+.bubble { background: #fff; border: 3px solid var(--ink); border-radius: 18px; padding: 12px 16px; font-family: var(--f-display); font-size: 23px; line-height: 1.45; position: relative; box-shadow: 4px 4px 0 var(--ink); min-height: 110px; display: flex; align-items: center; }
+.bubble::before { content: ""; position: absolute; left: -18px; top: 40px; border: 10px solid transparent; border-right: 16px solid var(--ink); border-left: 0; }
+.bubble::after { content: ""; position: absolute; left: -12px; top: 43px; border: 7px solid transparent; border-right: 12px solid #fff; border-left: 0; }
+.tray { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; }
+.decks { display: flex; gap: 14px; }
+.deck { width: 88px; height: 120px; border-radius: 12px; border: 3px solid var(--ink); color: #fff; display: grid; place-items: center; text-align: center; font-family: var(--f-display); font-size: 19px; line-height: 1.2; box-shadow: 4px 4px 0 var(--ink), 8px 8px 0 rgba(31,37,64,.25); transition: transform .3s; }
+.deck.d-daily { background: var(--c-daily); } .deck.d-event { background: var(--c-event); } .deck.d-monthly { background: var(--c-monthly); }
+.deck.pull { transform: translateY(-16px) rotate(-6deg); }
+.dice-area { display: grid; justify-items: center; gap: 8px; }
+.scene3d { width: 110px; height: 110px; perspective: 600px; cursor: pointer; }
+.die { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 1.1s cubic-bezier(.2,.8,.25,1); }
+.face { position: absolute; inset: 0; background: #fff; border: 4px solid var(--ink); border-radius: 18px; display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); padding: 14px; }
+.face i { width: 18px; height: 18px; border-radius: 50%; background: var(--ink); place-self: center; }
+.face.f1 i { background: var(--c-event); width: 24px; height: 24px; }
+.f1 { transform: rotateY(0deg) translateZ(55px); } .f6 { transform: rotateY(180deg) translateZ(55px); }
+.f2 { transform: rotateY(90deg) translateZ(55px); } .f5 { transform: rotateY(-90deg) translateZ(55px); }
+.f3 { transform: rotateX(-90deg) translateZ(55px); } .f4 { transform: rotateX(90deg) translateZ(55px); }
+.dice-label { font-family: var(--f-display); font-size: 20px; }
+.pawn { position: absolute; width: 50px; height: 50px; border-radius: 50%; border: 4px solid var(--ink); background: #fff; overflow: hidden; display: grid; place-items: center; font-family: var(--f-display); font-size: 24px; color: #fff; box-shadow: 0 5px 0 rgba(0,0,0,.25); transition: left .2s ease, top .2s ease; z-index: 5; }
+.pawn img { width: 125%; height: 125%; object-fit: cover; object-position: 50% 18%; }
+.pawn.hop { animation: hop .2s ease-out; }
+.pawn.me { box-shadow: 0 0 0 5px var(--gold), 0 5px 0 rgba(0,0,0,.25); z-index: 6; }
+@keyframes hop { 50% { transform: translateY(-18px) scale(1.08); } }
+
+/* ---------- console ---------- */
+.console { display: grid; gap: 12px; }
+.box { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+.box h3 { margin: 0 0 8px; font-size: 13px; letter-spacing: .1em; color: var(--sub); font-weight: 900; }
+.turn { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 10px; align-items: center; }
+.turn .av { width: 56px; height: 56px; }
+.turn .nm { font-family: var(--f-display); font-size: 22px; line-height: 1.2; }
+.turn .pos { font-size: 13px; color: var(--sub); }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
+.stat { background: var(--soft); border: 1px solid var(--line); border-radius: 10px; padding: 4px 6px; text-align: center; }
+.stat b { display: block; font-family: var(--f-mono); font-size: 20px; line-height: 1.2; }
+.stat span { font-size: 11.5px; color: var(--sub); font-weight: 700; }
+.stat.risk b { color: var(--c-event); }
+.riskbar { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; margin-top: 8px; }
+.riskbar i { height: 8px; border-radius: 4px; background: var(--chip); }
+.riskbar i.on { background: var(--c-event); }
+.actions { display: grid; gap: 8px; margin-top: 12px; }
+.btn { font: inherit; font-weight: 900; font-size: 15px; border-radius: 12px; border: 2px solid var(--ink); padding: 8px 14px; cursor: pointer; background: var(--card); color: var(--fg); min-height: 44px; }
+.btn.big { background: var(--gold); color: #1f2540; font-family: var(--f-display); font-weight: 400; font-size: 22px; box-shadow: 0 4px 0 var(--ink); }
+.btn.big:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn:focus-visible, .opt:focus-visible, .pick:focus-visible, .scene3d:focus-visible, .chipbtn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.plist { display: grid; gap: 6px; }
+.prow { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 14px; padding: 4px 6px; border-radius: 10px; }
+.prow.cur { background: var(--chip); }
+.prow .av { width: 34px; height: 34px; }
+.prow .meta { font-family: var(--f-mono); font-size: 12px; color: var(--sub); white-space: nowrap; }
+.prow .nm2 { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.av { border-radius: 50%; border: 3px solid var(--ink); overflow: hidden; display: grid; place-items: center; font-family: var(--f-display); color: #fff; background: #fff; font-size: 20px; }
+.av img { width: 125%; height: 125%; object-fit: cover; object-position: 50% 18%; }
+.log { display: grid; gap: 4px; font-size: 13px; max-height: 220px; overflow-y: auto; }
+.log div { border-left: 3px solid var(--line); padding-left: 8px; line-height: 1.4; }
+
+/* ---------- dialogs ---------- */
+.modal { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); background: rgba(20, 24, 44, .55); }
+.modal[hidden] { display: none !important; }
+.cardx { width: min(520px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; background: #fffaf0; color: #1f2540; border: 4px solid #1f2540; border-radius: 20px; box-shadow: 0 10px 0 #1f2540; animation: flipIn .5s cubic-bezier(.2,1.2,.4,1); }
+@keyframes flipIn { from { transform: perspective(900px) rotateY(80deg) scale(.8); opacity: 0; } }
+.cardx .ch { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 16px; color: #fff; font-weight: 900; letter-spacing: .06em; }
+.cardx .ch b { font-family: var(--f-display); font-weight: 400; font-size: 22px; letter-spacing: 0; }
+.cardx .cb { padding: 14px 16px 16px; display: grid; gap: 12px; }
+.say { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; align-items: start; }
+.say img { width: 64px; height: 64px; object-fit: contain; border-radius: 14px; background: #eef4f3; }
+.say .who { font-size: 12px; font-weight: 900; color: #11808a; }
+.say .who.A { color: #2b3f78; }
+.say .tx { font-family: var(--f-display); font-size: 18px; line-height: 1.5; }
+.opts { display: grid; gap: 8px; }
+.opt { font: inherit; text-align: left; font-size: 15.5px; font-weight: 700; border: 2px solid #1f2540; border-radius: 12px; background: #fff; color: #1f2540; padding: 8px 12px; cursor: pointer; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 8px; align-items: center; }
+.opt i { font-style: normal; width: 26px; height: 26px; border-radius: 50%; background: #1f2540; color: #fff; display: grid; place-items: center; font-family: var(--f-mono); font-size: 13px; }
+.opt:hover { background: #fff3cf; }
+.opt.right { background: #dff3dc; border-color: #3f9e3a; }
+.opt.wrong { background: #fde0e0; border-color: #e0434b; }
+.opt:disabled { cursor: default; }
+.result { border-radius: 12px; padding: 10px 12px; font-size: 15px; line-height: 1.5; }
+.result.good { background: #dff3dc; } .result.bad { background: #fde0e0; } .result.info { background: #eef1f8; }
+.gain { display: flex; flex-wrap: wrap; gap: 6px; }
+.fcard { display: inline-flex; align-items: baseline; gap: 6px; border: 2px solid #1f2540; border-radius: 10px; background: #fff; padding: 2px 9px; font-size: 13.5px; font-weight: 700; animation: pop .4s cubic-bezier(.2,1.6,.4,1) backwards; }
+.fcard code { font-family: var(--f-mono); font-size: 12px; color: #11808a; }
+.fcard.m { border-color: #e0434b; }
+.fcard.m::after { content: "必要"; font-size: 10.5px; color: #e0434b; }
+@keyframes pop { from { transform: scale(.3); opacity: 0; } }
+.cbtns { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.cbtns .btn { border-color: #1f2540; color: #1f2540; background: #fff; }
+.cbtns .btn.go { background: var(--gold); }
+.pick { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 8px; align-items: center; border: 2px solid #1f2540; border-radius: 12px; padding: 6px 10px; background: #fff; font-weight: 700; cursor: pointer; }
+.pick input { width: 20px; height: 20px; accent-color: #3f9e3a; }
+
+/* setup */
+.setup .cb label { font-size: 13px; font-weight: 900; color: #5a6380; }
+.seat { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 10px; align-items: center; }
+.seat input[type=text] { font: inherit; font-size: 15px; border: 2px solid #1f2540; border-radius: 10px; padding: 6px 10px; width: 100%; background: #fff; color: #1f2540; }
+.pawns { display: flex; gap: 6px; flex-wrap: wrap; }
+.chipbtn { font: inherit; font-size: 13px; font-weight: 700; border: 2px solid #1f2540; border-radius: 16px; padding: 2px 10px; background: #fff; color: #1f2540; cursor: pointer; }
+.chipbtn[aria-pressed="true"] { background: #1f2540; color: #fff; }
+.seat .av { width: 54px; height: 54px; }
+
+/* final */
+.rank { width: 100%; border-collapse: collapse; font-size: 14px; }
+.rank th, .rank td { padding: 6px 6px; border-bottom: 1px solid #d6d3c8; text-align: left; }
+.rank td.n { font-family: var(--f-mono); text-align: right; }
+.cert { border: 4px double #3f9e3a; border-radius: 14px; padding: 12px; text-align: center; background: #f4fbef; }
+.cert b { font-family: var(--f-display); font-weight: 400; font-size: 24px; color: #2d7a2a; display: block; }
+.cert.no { border-color: #e0434b; background: #fff3f1; }
+.cert.no b { color: #c0392b; }
+
+/* below */
+.below { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 900px) { .below { grid-template-columns: 1fr; } }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; min-width: 0; }
+.panel h2 { margin: 0 0 4px; font-family: var(--f-display); font-weight: 400; font-size: 22px; }
+.panel > p { margin: 0 0 10px; color: var(--sub); font-size: 14px; }
+.album { display: grid; gap: 8px; }
+.album .mrow { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 8px; align-items: start; }
+.album .mrow > b { font-family: var(--f-display); font-weight: 400; font-size: 17px; }
+.album .slots { display: flex; flex-wrap: wrap; gap: 5px; }
+.slot { font-size: 12.5px; border: 1px dashed var(--line); color: var(--sub); border-radius: 8px; padding: 1px 7px; }
+.slot code { font-family: var(--f-mono); font-size: 11.5px; }
+.slot.got { border: 1px solid var(--accent); color: var(--fg); background: var(--chip); }
+.slot.m::after { content: " ●"; color: var(--c-event); }
+.rules { display: grid; gap: 8px; font-size: 14px; }
+.rules .k { display: inline-block; min-width: 76px; font-weight: 900; }
+.legend-c { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; }
+footer.foot { border-top: 1px solid var(--line); padding-top: 14px; font-size: 13px; color: var(--sub); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 20px; }
+footer.foot b { color: var(--fg); }
+footer.foot a { color: var(--accent); }
+@media (prefers-reduced-motion: reduce) {
+  .die, .pawn { transition-duration: .01s !important; }
+  .pawn.hop, .cardx, .fcard { animation: none !important; }
+}
+</style>
+
+<div class="page">
+  <header class="top">
+    <div>
+      <div class="eyebrow">ISMS 桌遊 · 1～4 人同機輪流</div>
+      <h1><em>ISMS 大富翁</em>：資安一年大挑戰</h1>
+    </div>
+    <div class="by">製作：<b>Allan Lo</b>｜2026/10/16<br>主持：AI 小助手阿拉蕾・稽核：Allan 顧問</div>
+  </header>
+
+  <div class="game">
+    <div class="board-wrap" id="wrap">
+      <div class="board" id="board">
+        <div class="center">
+          <div class="logo"><div class="k">資安一年大挑戰</div><h2>ISMS 大富翁</h2><p>蒐集紀錄・擋下事件・通過稽核</p></div>
+          <div class="mid">
+            <div class="host"><img id="hostImg" alt="主持人阿拉蕾"></div>
+            <div class="bubble" id="hostSay">歡迎來到 ISMS 大富翁！</div>
+          </div>
+          <div class="tray">
+            <div class="decks"><div class="deck d-daily" id="dk-daily">日常<br>申請卡</div><div class="deck d-event" id="dk-event">資安<br>事件卡</div></div>
+            <div class="dice-area">
+              <div class="scene3d" id="dieBtn" tabindex="0" role="button" aria-label="擲骰子"><div class="die" id="die">
+                <div class="face f1"><i style="grid-area:2/2"></i></div>
+                <div class="face f2"><i style="grid-area:1/1"></i><i style="grid-area:3/3"></i></div>
+                <div class="face f3"><i style="grid-area:1/1"></i><i style="grid-area:2/2"></i><i style="grid-area:3/3"></i></div>
+                <div class="face f4"><i style="grid-area:1/1"></i><i style="grid-area:1/3"></i><i style="grid-area:3/1"></i><i style="grid-area:3/3"></i></div>
+                <div class="face f5"><i style="grid-area:1/1"></i><i style="grid-area:1/3"></i><i style="grid-area:2/2"></i><i style="grid-area:3/1"></i><i style="grid-area:3/3"></i></div>
+                <div class="face f6"><i style="grid-area:1/1"></i><i style="grid-area:1/3"></i><i style="grid-area:2/1"></i><i style="grid-area:2/3"></i><i style="grid-area:3/1"></i><i style="grid-area:3/3"></i></div>
+              </div></div>
+              <div class="dice-label" id="diceLabel">點骰子</div>
+            </div>
+            <div class="decks" style="justify-content:flex-end"><div class="deck d-monthly" id="dk-monthly">每月<br>月報卡</div></div>
+          </div>
+        </div>
+        <div id="cells"></div>
+        <div id="pawns"></div>
+      </div>
+    </div>
+
+    <aside class="console">
+      <div class="box">
+        <h3>現在輪到</h3>
+        <div class="turn"><div class="av" id="tAv"></div><div><div class="nm" id="tName">—</div><div class="pos" id="tPos"></div></div></div>
+        <div class="stats">
+          <div class="stat"><b id="sRec">0</b><span>紀錄卡</span></div>
+          <div class="stat"><b id="sStar">0</b><span>★ 星星</span></div>
+          <div class="stat"><b id="sBud">0</b><span>預算</span></div>
+          <div class="stat risk"><b id="sRisk">0</b><span>風險</span></div>
+        </div>
+        <div class="riskbar" id="riskbar" aria-label="風險值"></div>
+        <div class="actions">
+          <button class="btn big" id="roll" type="button">擲骰子</button>
+          <button class="btn" id="fix" type="button">投入 2 預算，風險 −1</button>
+        </div>
+      </div>
+      <div class="box"><h3>玩家</h3><div class="plist" id="plist"></div></div>
+      <div class="box"><h3>遊戲紀錄</h3><div class="log" id="log" aria-live="polite"></div></div>
+      <button class="btn" id="sound" type="button" aria-pressed="true">聲音：開</button>
+      <button class="btn" id="restart" type="button">重新開始</button>
+    </aside>
+  </div>
+
+  <div class="below">
+    <section class="panel" aria-labelledby="albumT">
+      <h2 id="albumT">紀錄卡收藏冊</h2>
+      <p id="albumSub">目前玩家已蒐集的紀錄卡。紅點 ● 是稽核必要紀錄，年底外部稽核會檢查覆蓋率。</p>
+      <div class="album" id="album"></div>
+    </section>
+    <section class="panel" aria-labelledby="rulesT">
+      <h2 id="rulesT">遊戲規則</h2>
+      <div class="rules">
+        <div><span class="k">目標</span>從 1 月走到 12 月，一圈回到起點時接受外部稽核。稽核必要紀錄覆蓋率達 60%，而且風險不超過 4，就能取得驗證。分數最高的人獲勝。</div>
+        <div><span class="k"><i class="legend-c" style="background:var(--c-month)"></i>月份任務</span>答題完成該月工作，獲得紀錄卡；答對再加 ★。只是路過也可以花 1 預算補做（沒有 ★）。</div>
+        <div><span class="k"><i class="legend-c" style="background:var(--c-daily)"></i>日常申請</span>選對該用哪張表單：答對得卡＋★，答錯風險 +1。</div>
+        <div><span class="k"><i class="legend-c" style="background:var(--c-event)"></i>資安事件</span>手上有對應的防禦紀錄就擋下來（＋★）；沒有就風險 +2。</div>
+        <div><span class="k"><i class="legend-c" style="background:var(--c-monthly)"></i>每月月報</span>答對得月報紀錄卡，主管再撥 1 預算。</div>
+        <div><span class="k"><i class="legend-c" style="background:var(--c-help)"></i>AI 小助手</span>阿拉蕾隨機幫忙：情資摘要、到期提醒、防護盾、預算。</div>
+        <div><span class="k"><i class="legend-c" style="background:var(--c-audit)"></i>Allan 稽核</span>抽查一張「到目前為止應該要有」的必要紀錄：有就 ★★，沒有就開缺失，風險 +1。</div>
+        <div><span class="k">計分</span>紀錄卡每張 1 分，必要紀錄再加 1 分；★ 每顆 1 分；風險每點扣 2 分。</div>
+      </div>
+    </section>
+  </div>
+
+  <footer class="foot">
+    <span>製作：<b>Allan Lo</b>｜2026/10/16｜主持：AI 小助手阿拉蕾・稽核：Allan 顧問</span>
+    <span>卡片內容依據：ISMS 文件清單及每月執行紀錄建議（12 月驗證版）、ISMS 的 15 項運作能力之作業流程（2027）</span>
+    <span>其他版本：<a href="https://claude.ai/artifact/F9GKBTktpy39ckmyTM1up7" target="_blank" rel="noopener">劇情動畫</a>・<a href="https://claude.ai/artifact/4pJ6AzqokneGFPqzgc7U9y" target="_blank" rel="noopener">工作地圖</a>・<a href="https://claude.ai/artifact/KNn7ns3jbaBjedcC3knxjS" target="_blank" rel="noopener">資安小鎮</a></span>
+  </footer>
+</div>
+
+<div class="modal" id="modal" hidden><div class="cardx" id="cardx" role="dialog" aria-modal="true" aria-labelledby="cTitle"></div></div>
+
+<script>
+const SPRITES = __SPRITES__;
+const AUDIO = __AUDIO__;
+
+/* ================= voice lines: id: [who, face, text] ================= */
+const LINES = {
+  welcome: ["R", "arale_cheer", "歡迎來到 ISMS 大富翁！選好角色，一起走完資安的一年！"],
+  turn: ["R", "arale_thumb", "輪到你囉！擲骰子吧！"],
+  month: ["R", "arale_explain", "到了重點月份！回答問題，完成這個月的工作。"],
+  daily: ["R", "arale_explain", "有人送申請來了！這種情況要用哪張表單呢？"],
+  monthly: ["R", "arale_cheer", "月報日！答對了，主管會多給你一點預算喔！"],
+  correct: ["R", "arale_cheer", "答對了！紀錄卡收進檔案夾！"],
+  wrong: ["A", "allan_point", "可惜！我來說明一下正確答案。"],
+  event: ["R", "arale_cry", "糟糕！發生資安事件了！"],
+  defend: ["A", "allan_laugh", "有紀錄、有準備，這次擋下來了！"],
+  hit: ["A", "allan_wow", "沒有準備，風險升高了。"],
+  help: ["R", "arale_cheer", "AI 小助手出動！我來幫你一把！"],
+  audit: ["A", "allan_wink", "我是稽核員。請給我看紀錄。"],
+  auditPass: ["A", "allan_smile", "很好，紀錄齊全，符合要求。"],
+  auditFail: ["A", "allan_point", "沒有紀錄，就等於沒有做。開立一項缺失。"],
+  final: ["A", "allan_smile", "年底外部稽核到了！我們來看看你這一整年。"],
+  cert: ["A", "allan_laugh", "恭喜！通過驗證，取得 ISO 27001 證書！"],
+  nocert: ["A", "allan_point", "還差一點點。把缺失改善好，明年再挑戰！"],
+};
+const NAMES = { A: "Allan 顧問", R: "阿拉蕾" };
+
+/* ================= card catalogue (from the ISMS worklists) ================= */
+// code: [name, must]
+const CARD = {
+  "L4-17": ["年度資安目標設定表", 1], "L4-12": ["資訊安全管理訓練計畫", 1],
+  "L4-03": ["資訊安全委員會人員名單", 1], "L4-25": ["備份清單", 1], "L4-29": ["機房授權人員名單", 1], "L4-41": ["外部 IT 及雲服務清單", 1], "L4-54": ["資安參考法規清單", 1],
+  "L4-01": ["業務流程盤點彙整表", 0], "MEET": ["關注者會議紀錄", 1], "L4-02": ["組織全景分析表", 1],
+  "L4-00": ["資訊安全管理文件列表", 1], "L4-07": ["文件修訂建議表", 1],
+  "TRAIN": ["資安宣導簽到與測驗", 0],
+  "L4-27": ["特權帳號清冊", 1], "L4-35": ["防火牆政策與日誌檢視表", 1],
+  "L4-26": ["權限帳號檢視紀錄單", 1],
+  "L4-21": ["資訊資產與風險評鑑總表", 1], "L4-22": ["風險改善與機會實作計畫表", 1], "L4-23": ["風險與機會評鑑報告", 1],
+  "VULN": ["弱點掃描報告及處理", 0], "L4-42": ["委外供應商評鑑表", 1], "L4-43": ["NDA 保密切結書（廠商）", 0], "ITC": ["IT 人員專業課程證明", 0],
+  "L4-48": ["營運衝擊分析表", 1], "L4-49": ["營運持續計畫", 1], "L4-50": ["營運持續演練計畫", 1], "L4-51": ["營運持續演練紀錄表", 1], "L4-37": ["備份資料測試紀錄單", 1],
+  "L4-13": ["ISMS 內部稽核計畫", 1], "L4-14": ["ISMS 內部稽核查檢表", 1], "L4-15": ["ISMS 內部稽核報告", 1], "L4-16": ["矯正處理單", 1], "RPT-C": ["管理審查報告", 1],
+  "EXT": ["外部稽核準備資料", 0],
+  // 日常（不定期）
+  "L4-08": ["保密切結書", 1], "L4-11": ["離職切結書", 0], "L4-10": ["文件與資訊資產交接清單", 0], "L4-24": ["系統帳號及權限申請單", 0],
+  "L4-20": ["變更申請與處理紀錄單", 0], "L4-19": ["組織業務流程變更風險評估表", 0], "L4-28": ["人員進出登記表", 1], "L4-30": ["資訊資產進出及異動紀錄表", 0],
+  "L4-31": ["設備報廢資料清除確認單", 0], "L4-34": ["外對內及設備連網使用申請表", 0], "L4-36": ["防火牆安全控管規則使用申請單", 0],
+  "L4-52": ["安全要求事項表", 0], "L4-55": ["資安列管合約清單", 1], "L4-56": ["資料庫資料異動申請單", 0], "L4-57": ["系統測試資料申請單", 0], "L4-58": ["應用系統維護申請單", 0], "L4-59": ["新系統開發需求評估單", 0], "L4-60": ["系統分析文件確認單", 0], "L4-61": ["系統開發測試及上線紀錄單", 0],
+  "L4-46": ["資通安全事故通報處理單", 1],
+  // 每月
+  "L4-45": ["資訊安全情資管理表", 1], "L4-18": ["ISMS 有效性評估表", 1], "RPT-D": ["資安工作月報", 0], "LOG": ["機房工作日誌（日誌審查）", 0],
+};
+const MUST_TOTAL = Object.values(CARD).filter(c => c[1]).length;
+
+/* month tasks: month: [theme, cards, question, options (first is correct), explanation] */
+const MONTHS = {
+  1:  ["年度啟動", ["L4-17", "L4-12"], "", [], ""],
+  2:  ["年度清單", ["L4-03", "L4-25", "L4-29", "L4-41", "L4-54"], "下列哪一份「不是」二月要更新的年度清單？", ["ISMS 內部稽核報告", "備份清單", "機房授權人員名單", "資安參考法規清單"], "內部稽核報告是 11 月的工作。二月要確認委員會名單、聯絡清冊、備份清單、機房授權、軟體清冊、雲服務、法規清單等。"],
+  3:  ["關注者會議", ["L4-01", "MEET", "L4-02"], "三月開完關注者會議之後，要產出哪一份分析？", ["組織全景分析表（L4-02）", "風險與機會評鑑報告（L4-23）", "管理審查報告（報告C）", "弱點掃描報告"], "關注者會議之後做全景分析，產出組織全景分析表 L4-02。"],
+  4:  ["文件修訂", ["L4-00", "L4-07"], "ISMS 文件要修訂時，用哪張表提出？", ["文件修訂建議表（L4-07）", "變更申請與處理紀錄單（L4-20）", "矯正處理單（L4-16）", "系統帳號及權限申請單（L4-24）"], "文件修訂用 L4-07 文件修訂建議表，並更新 L4-00 資訊安全管理文件列表。"],
+  5:  ["資安宣導", ["TRAIN"], "全員資安宣導，建議每年上多少小時？", ["3 小時", "12 小時", "30 分鐘", "不用上課，看公告就好"], "全員資安宣導 3 小時；IT 人員的資安專業課程是 12 小時（9 月）。"],
+  6:  ["半年清查", ["L4-27", "L4-35"], "特權帳號清冊多久要清查一次？", ["每半年（6 月、12 月）", "每天", "每三年", "出事了再查"], "特權帳號清冊 L4-27 與防火牆政策檢視 L4-35 都是每半年做一次。"],
+  7:  ["權限審查", ["L4-26"], "一般使用者的系統權限審查，應該由誰確認？", ["使用者所屬的業務單位主管", "使用者自己", "系統廠商", "不需要確認"], "由業務單位主管確認同仁的權限是否仍需要，結果記在 L4-26 權限帳號檢視紀錄單。"],
+  8:  ["風險評鑑", ["L4-21", "L4-22", "L4-23"], "年度風險評鑑的結果，主要記錄在哪張表？", ["資訊資產與風險評鑑總表（L4-21）", "資訊安全情資管理表（L4-45）", "人員進出登記表（L4-28）", "系統開發測試及上線紀錄單（L4-61）"], "資產盤點與風險評鑑記在 L4-21，處理計畫是 L4-22，報告是 L4-23。"],
+  9:  ["弱掃・供應商", ["VULN", "L4-42", "L4-43", "ITC"], "評鑑委外供應商的資安能力，要用哪張表？", ["委外供應商評鑑表（L4-42）", "外對內及設備連網使用申請表（L4-34）", "保密切結書（L4-08）", "ISMS 有效性評估表（L4-18）"], "九月評鑑供應商用 L4-42；需接觸機敏資料的廠商要簽 L4-43 NDA。"],
+  10: ["BCP 演練", ["L4-48", "L4-49", "L4-50", "L4-51", "L4-37"], "營運持續演練時順便做的備份回存測試，要記在哪張表？", ["備份資料測試紀錄單（L4-37）", "備份清單（L4-25）", "設備報廢資料清除確認單（L4-31）", "資料庫資料異動申請單（L4-56）"], "回存測試記在 L4-37。L4-25 備份清單只列出有哪些備份，不能證明備份還原得回來。"],
+  11: ["內稽・管審", ["L4-13", "L4-14", "L4-15", "L4-16", "RPT-C"], "內部稽核發現的不符合事項，要開哪張表追蹤？", ["矯正處理單（L4-16）", "文件修訂建議表（L4-07）", "變更申請與處理紀錄單（L4-20）", "資通安全事故通報處理單（L4-46）"], "不符合事項開 L4-16 矯正處理單，追蹤到關閉；管理審查要檢討矯正的狀況。"],
+  12: ["外稽準備", ["EXT"], "外部稽核之前，最重要的準備是什麼？", ["一整年確實執行並留下的紀錄", "前一晚把文件補寫完", "請稽核員吃大餐", "把缺失藏起來"], "稽核看的是一整年的運作證據。臨時補寫的紀錄，日期和內容很容易露出破綻。"],
+};
+
+/* daily scenario cards: [situation, correct code, distractor codes, note] */
+const DAILY = [
+  ["新同事今天報到，第一份要簽的是？", "L4-08", ["L4-11", "L4-28", "L4-36"], "新進員工到職先簽保密切結書 L4-08，再依職務申請帳號 L4-24。"],
+  ["廠商下午要進機房更換 UPS 電池。", "L4-28", ["L4-34", "L4-31", "L4-20"], "未授權人員進出機房要登記 L4-28，並由人員陪同。"],
+  ["業務要開放客戶的 IP 連進公司系統。", "L4-36", ["L4-24", "L4-56", "L4-30"], "防火牆規則變更用 L4-36，記得設定到期日。"],
+  ["工程師想直接到資料庫修改一筆訂單資料。", "L4-56", ["L4-20", "L4-57", "L4-61"], "直接異動資料庫資料要填 L4-56，經核准才能執行。"],
+  ["一台有硬碟的舊伺服器要報廢。", "L4-31", ["L4-30", "L4-25", "L4-10"], "含硬碟的設備報廢前要清除資料，填 L4-31 確認。"],
+  ["同事下週要離職。", "L4-11", ["L4-08", "L4-24", "L4-19"], "離職要簽 L4-11 離職切結書，並以 L4-10 交接文件與資產。"],
+  ["核心系統要升級作業系統版本。", "L4-20", ["L4-36", "L4-58", "L4-52"], "系統與軟硬體變更用 L4-20，先評估、留好回復計畫。"],
+  ["公司接了一個新專案，準備開工。", "L4-52", ["L4-59", "L4-55", "L4-19"], "專案啟動先用 L4-52 識別安全要求事項。"],
+  ["開發團隊想用正式資料來測試新功能。", "L4-57", ["L4-56", "L4-61", "L4-31"], "以正式資料測試要申請 L4-57，必要時做遮罩。"],
+  ["廠商的筆電要接上公司內網除錯。", "L4-34", ["L4-28", "L4-36", "L4-08"], "外部設備連網要申請 L4-34。"],
+  ["新系統測試完成，準備正式上線。", "L4-61", ["L4-60", "L4-20", "L4-57"], "上線前的測試與上線紀錄用 L4-61。"],
+  ["和新客戶簽約，合約裡有資安條款。", "L4-55", ["L4-43", "L4-42", "L4-54"], "合約裡的資安要求要列入 L4-55 資安列管合約清單。"],
+  ["一台伺服器要帶出機房送修。", "L4-30", ["L4-31", "L4-28", "L4-25"], "設備離開安全區域要記錄 L4-30 資訊資產進出及異動。"],
+  ["公司業務流程大調整，可能影響資安風險。", "L4-19", ["L4-20", "L4-07", "L4-21"], "組織或業務流程變動先用 L4-19 評估變更風險。"],
+  ["同事轉調到財務部，需要調整系統權限。", "L4-24", ["L4-26", "L4-11", "L4-36"], "轉調時用 L4-24 申請權限異動，舊權限要收回。"],
+];
+/* incident cards: [title, story, defence code, lesson] */
+const EVENTS = [
+  ["勒索軟體", "檔案伺服器被加密，對方要求贖金！", "L4-37", "有做過備份回存測試（L4-37），確定備份還原得回來，就不必付贖金。"],
+  ["釣魚郵件", "一封假冒老闆的郵件，三位同事點了連結。", "TRAIN", "做過全員資安宣導（簽到與測驗），同事比較會辨識釣魚信。"],
+  ["離職帳號沒停", "上個月離職的同事，帳號還能登入雲端硬碟。", "L4-26", "每年的權限審查（L4-26）會抓出這種殘留帳號。"],
+  ["防火牆破口", "一條三年前的 any-any 規則被攻擊者利用。", "L4-35", "半年一次的防火牆政策檢視（L4-35）會清掉過期規則。"],
+  ["供應商被駭", "委外廠商被入侵，攻擊者從廠商連線進來。", "L4-42", "事先做過供應商評鑑（L4-42），連線與權限都有管控。"],
+  ["機房停電", "大樓停電，UPS 撐不住，核心系統中斷。", "L4-49", "有營運持續計畫（L4-49），照劇本切換、依序復原。"],
+  ["特權帳號盜用", "系統管理員帳號在半夜被異常登入。", "L4-27", "特權帳號有清冊並定期清查（L4-27），多餘帳號早就停用了。"],
+  ["零時差漏洞", "常用的 VPN 爆出重大漏洞，正在被大量攻擊。", "VULN", "做過弱點掃描與修補追蹤，知道哪些設備受影響、多快修好。"],
+  ["陌生人進機房", "有人跟著員工混進機房。", "L4-29", "有機房授權人員名單（L4-29），陌生人一眼就看得出來。"],
+  ["說寫不一致", "程序書寫的和實際做法完全不同，被客戶稽核發現。", "L4-00", "文件列表與版本管理（L4-00）讓程序書跟得上實務。"],
+  ["雲端服務中斷", "公司用的雲端服務大當機，沒人知道影響範圍。", "L4-41", "有外部 IT 及雲服務清單（L4-41），馬上知道哪些業務受影響。"],
+  ["新服務沒評估", "新上線的服務出問題，事前沒人評估過風險。", "L4-21", "資產盤點與風險評鑑（L4-21）會把新服務納入評估。"],
+];
+/* monthly-report cards: [question, correct code, distractors, note] */
+const MONTHLY = [
+  ["每個月蒐集的資安情資（資安署月報、SOC 報告）記在哪？", "L4-45", ["L4-18", "L4-46", "L4-54"], "每月情資記在 L4-45 資訊安全情資管理表。"],
+  ["每個月的 KPI 統計，要用哪張表？", "L4-18", ["L4-17", "L4-45", "L4-23"], "每月 KPI 用 L4-18 ISMS 有效性評估表。"],
+  ["每月整理後提報主管的是？", "RPT-D", ["RPT-C", "L4-15", "L4-23"], "每月提報的是資安工作月報（報告D）；管理審查報告（報告C）是年度的。"],
+  ["每月審查機房與系統日誌，結果記在？", "LOG", ["L4-28", "L4-30", "L4-25"], "日誌審查記在機房工作日誌，作為月報的素材。"],
+];
+
+/* ================= board layout ================= */
+// 24 spaces clockwise from the top-left corner. Even spaces 2..22 are Feb..Dec; 0 is start / finish.
+const ODD = { 1: "daily", 3: "event", 5: "monthly", 7: "daily", 9: "help", 11: "audit", 13: "daily", 15: "event", 17: "monthly", 19: "daily", 21: "event", 23: "audit" };
+const TYPE = i => i === 0 ? "start" : i % 2 === 0 ? "month" : ODD[i];
+const monthOf = i => i / 2 + 1;
+function cellRC(i) {
+  if (i <= 6) return [0, i];
+  if (i <= 12) return [i - 6, 6];
+  if (i <= 18) return [6, 6 - (i - 12)];
+  return [6 - (i - 18), 0];
+}
+const CS = 1000 / 7;
+const TINFO = {
+  daily: ["日常", "申", "日常申請", "抽一張日常申請卡"], event: ["事件", "!", "資安事件", "抽一張資安事件卡"],
+  monthly: ["每月", "報", "每月月報", "抽一張月報卡"], help: ["助手", "AI", "AI 小助手", "阿拉蕾來幫忙"], audit: ["稽核", "稽", "Allan 稽核", "抽查必要紀錄"],
+};
+const cellsEl = document.getElementById("cells");
+for (let i = 0; i < 24; i++) {
+  const [r, c] = cellRC(i), t = TYPE(i);
+  const el = document.createElement("div");
+  el.className = "cell " + t; el.id = "cell" + i;
+  el.style.left = c * CS + "px"; el.style.top = r * CS + "px";
+  if (t === "start") el.innerHTML = `<div class="band">起點／終點<small>1・12</small></div><div class="inner"><div class="glyph" style="color:var(--c-start)">★</div><div class="tt">年度啟動</div><div class="sub">回到這裡＝12 月底外部稽核</div></div>`;
+  else if (t === "month") { const m = monthOf(i); el.innerHTML = `<div class="band">${m} 月<small>任務</small></div><div class="inner"><div class="glyph">${m}</div><div class="tt">${MONTHS[m][0]}</div><div class="sub">${MONTHS[m][1].length} 張紀錄卡</div></div>`; }
+  else { const [b, g, tt, sub] = TINFO[t]; el.innerHTML = `<div class="band">${b}<small>${i}</small></div><div class="inner"><div class="glyph">${g}</div><div class="tt">${tt}</div><div class="sub">${sub}</div></div>`; }
+  cellsEl.append(el);
+}
+
+/* ================= helpers ================= */
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const cardTag = code => `<span class="fcard${CARD[code][1] ? " m" : ""}"><code>${code.startsWith("L4") ? code : ""}</code>${esc(CARD[code][0])}</span>`;
+const label = code => `${CARD[code][0]}${code.startsWith("L4") ? `（${code}）` : ""}`;
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ================= audio ================= */
+let soundOn = true, audio = null, unlocked = false;
+function voice(id) {
+  if (audio) { audio.pause(); audio = null; }
+  if (!soundOn || !unlocked || !AUDIO[id]) return;
+  audio = new Audio(AUDIO[id].src); audio.play().catch(() => {});
+}
+function host(id, text) { const L = LINES[id]; $("hostImg").src = SPRITES[L[0] === "R" ? L[1] : "arale_thumb"]; $("hostSay").textContent = text || L[2]; }
+
+/* ================= players ================= */
+const PAWNS = {
+  arale: { n: "阿拉蕾", img: "arale_cheer", color: "#159f98" }, allan: { n: "Allan", img: "allan_smile", color: "#2b3f78" },
+  an: { n: "小安", letter: "安", color: "#ee6a43" }, zi: { n: "小資", letter: "資", color: "#7d55d8" },
+};
+let players = [], cur = 0, busy = false, decks = {};
+const avHTML = pk => PAWNS[pk].img ? `<img src="${SPRITES[PAWNS[pk].img]}" alt="">` : PAWNS[pk].letter;
+function setAv(el, pk) { el.innerHTML = avHTML(pk); el.style.background = PAWNS[pk].img ? "#fff" : PAWNS[pk].color; el.style.borderColor = PAWNS[pk].color; }
+function log(msg) { const d = document.createElement("div"); d.innerHTML = msg; $("log").prepend(d); while ($("log").children.length > 40) $("log").lastChild.remove(); }
+
+function drawPawns() {
+  const box = $("pawns"); box.innerHTML = "";
+  const byCell = {};
+  players.forEach((p, k) => (byCell[p.pos] = byCell[p.pos] || []).push(k));
+  players.forEach((p, k) => {
+    const el = document.createElement("div"); el.className = "pawn" + (k === cur ? " me" : ""); el.id = "pawn" + k;
+    el.innerHTML = avHTML(p.pawn); el.style.background = PAWNS[p.pawn].img ? "#fff" : PAWNS[p.pawn].color; el.style.borderColor = PAWNS[p.pawn].color;
+    placePawn(el, p.pos, byCell[p.pos].indexOf(k)); box.append(el);
+  });
+}
+function placePawn(el, pos, slot) {
+  const [r, c] = cellRC(pos);
+  const ox = [16, 76, 16, 76][slot % 4], oy = [44, 44, 90, 90][slot % 4];
+  el.style.left = (c * CS + ox) + "px"; el.style.top = (r * CS + oy - 8) + "px";
+}
+function refreshUI() {
+  const p = players[cur]; if (!p) return;
+  setAv($("tAv"), p.pawn); $("tName").textContent = p.name;
+  const t = TYPE(p.pos);
+  $("tPos").textContent = p.done ? "已完成外部稽核" : p.pos === 0 ? "在起點（1 月）" : t === "month" ? `位在 ${monthOf(p.pos)} 月任務格` : `位在 ${TINFO[t][2]}格・約 ${Math.floor(p.pos / 2) + 1} 月`;
+  $("sRec").textContent = p.cards.size; $("sStar").textContent = p.stars; $("sBud").textContent = p.budget; $("sRisk").textContent = p.risk;
+  $("riskbar").innerHTML = Array.from({ length: 6 }, (_, i) => `<i class="${i < p.risk ? "on" : ""}"></i>`).join("");
+  $("roll").disabled = busy || p.done; $("fix").disabled = busy || p.done || p.budget < 2 || p.risk < 1;
+  $("plist").innerHTML = players.map((q, k) => `<div class="prow${k === cur ? " cur" : ""}"><div class="av" style="background:${PAWNS[q.pawn].img ? "#fff" : PAWNS[q.pawn].color};border-color:${PAWNS[q.pawn].color}">${avHTML(q.pawn)}</div><span class="nm2">${esc(q.name)}${q.done ? "（完成）" : ""}</span><span class="meta">卡${q.cards.size} ★${q.stars} 險${q.risk}</span></div>`).join("");
+  document.querySelectorAll(".pawn").forEach((el, k) => el.classList.toggle("me", k === cur));
+  renderAlbum(p);
+}
+function renderAlbum(p) {
+  $("albumT").textContent = `紀錄卡收藏冊：${p.name}`;
+  const groups = [...Array.from({ length: 12 }, (_, i) => [`${i + 1} 月`, MONTHS[i + 1][1]]), ["日常", DAILY.map(d => d[1]).filter((v, i, a) => a.indexOf(v) === i).concat(["L4-10", "L4-46"])], ["每月", ["L4-45", "L4-18", "RPT-D", "LOG"]]];
+  $("album").innerHTML = groups.map(([g, codes]) => `<div class="mrow"><b>${g}</b><div class="slots">${codes.map(c => `<span class="slot${p.cards.has(c) ? " got" : ""}${CARD[c][1] ? " m" : ""}">${c.startsWith("L4") ? `<code>${c}</code> ` : ""}${esc(CARD[c][0])}</span>`).join("")}</div></div>`).join("");
+}
+function give(p, codes) { const fresh = codes.filter(c => !p.cards.has(c)); codes.forEach(c => p.cards.add(c)); return fresh; }
+
+/* ================= dice & movement ================= */
+const ROT = { 1: [0, 0], 2: [0, -90], 3: [90, 0], 4: [-90, 0], 5: [0, 90], 6: [0, 180] };
+let spins = 0;
+async function rollDie() {
+  const v = 1 + Math.floor(Math.random() * 6);
+  spins += 2;
+  const [rx, ry] = ROT[v];
+  $("die").style.transform = `rotateX(${rx + 360 * spins}deg) rotateY(${ry + 360 * spins}deg)`;
+  $("diceLabel").textContent = "……";
+  await sleep(reduceMotion ? 50 : 1150);
+  $("diceLabel").textContent = `擲出 ${v} 點`;
+  return v;
+}
+async function move(p, steps) {
+  const passed = []; let finished = false;
+  const el = $("pawn" + cur);
+  for (let s = 1; s <= steps; s++) {
+    let np = p.pos + 1;
+    if (np >= 24) { np = 0; finished = true; }
+    p.pos = np;
+    placePawn(el, np, 0); el.classList.remove("hop"); void el.offsetWidth; el.classList.add("hop");
+    document.querySelectorAll(".cell.lit").forEach(c => c.classList.remove("lit")); $("cell" + np).classList.add("lit");
+    await sleep(reduceMotion ? 40 : 260);
+    if (finished) break;
+    if (s < steps && TYPE(np) === "month") passed.push(monthOf(np));
+  }
+  drawPawns();
+  return { passed, finished };
+}
+
+/* ================= dialogs ================= */
+const COL = { month: "var(--c-month)", daily: "var(--c-daily)", event: "var(--c-event)", monthly: "var(--c-monthly)", help: "var(--c-help)", audit: "var(--c-audit)", start: "var(--c-start)" };
+function open(type, kicker, title, inner) {
+  $("modal").hidden = false;
+  $("cardx").innerHTML = `<div class="ch" style="background:${COL[type]}"><span>${kicker}</span><b id="cTitle">${title}</b></div><div class="cb" id="cbody">${inner}</div>`;
+  $("cardx").style.animation = "none"; void $("cardx").offsetWidth; $("cardx").style.animation = "";
+}
+const sayHTML = (lineId, text) => { const [w, f, t] = LINES[lineId]; return `<div class="say"><img src="${SPRITES[f]}" alt=""><div><div class="who ${w}">${NAMES[w]}</div><div class="tx">${text || t}</div></div></div>`; };
+function waitBtns(btns) {
+  return new Promise(res => {
+    const box = document.createElement("div"); box.className = "cbtns";
+    btns.forEach(([lbl, val, go]) => { const b = document.createElement("button"); b.type = "button"; b.className = "btn" + (go ? " go" : ""); b.textContent = lbl; b.addEventListener("click", () => res(val)); box.append(b); });
+    $("cbody").append(box); box.querySelector("button").focus();
+  });
+}
+function close() { $("modal").hidden = true; }
+function quiz(question, correctText, wrongTexts) {
+  const opts = shuffle([[correctText, true], ...wrongTexts.map(w => [w, false])]);
+  return new Promise(res => {
+    const box = document.createElement("div"); box.className = "opts";
+    box.innerHTML = `<div style="font-weight:900;font-size:16.5px">${esc(question)}</div>`;
+    opts.forEach(([t, ok], i) => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "opt"; b.innerHTML = `<i>${"ABCD"[i]}</i><span>${esc(t)}</span>`;
+      b.addEventListener("click", () => {
+        box.querySelectorAll(".opt").forEach((x, j) => { x.disabled = true; if (opts[j][1]) x.classList.add("right"); });
+        if (!ok) b.classList.add("wrong");
+        res(ok);
+      });
+      box.append(b);
+    });
+    $("cbody").append(box); box.querySelector(".opt").focus();
+  });
+}
+function addHTML(html) { const d = document.createElement("div"); d.innerHTML = html; while (d.firstChild) $("cbody").append(d.firstChild); }
+
+/* ================= space resolution ================= */
+async function resolveMonth(p, m) {
+  const [theme, codes, q, opts, why] = MONTHS[m];
+  voice("month"); host("month", `${m} 月：${theme}！`);
+  open("month", `${m} 月任務`, theme, sayHTML("month"));
+  const ok = await quiz(q, opts[0], opts.slice(1));
+  const fresh = give(p, codes);
+  if (ok) { p.stars++; voice("correct"); }
+  else voice("wrong");
+  addHTML(`<div class="result ${ok ? "good" : "info"}">${ok ? "答對了！★ +1。" : "答錯了，不過工作還是完成了（沒有 ★）。"}${esc(why)}</div><div class="gain">${codes.map(cardTag).join("")}</div>`);
+  log(`<b>${esc(p.name)}</b> 完成 ${m} 月「${theme}」${ok ? "，答對 ★" : ""}，得到 ${fresh.length} 張新紀錄卡`);
+  await waitBtns([["收進檔案夾", 1, true]]);
+}
+async function resolveDaily(p) {
+  const [sit, code, dis, note] = decks.daily.pop() || DAILY[Math.floor(Math.random() * DAILY.length)];
+  if (!decks.daily.length) decks.daily = shuffle(DAILY);
+  pull("dk-daily"); voice("daily"); host("daily");
+  open("daily", "日常申請卡", "該用哪張表？", sayHTML("daily", esc(sit)));
+  const ok = await quiz("請選出正確的表單：", label(code), dis.map(label));
+  if (ok) { give(p, [code]); p.stars++; voice("correct"); addHTML(`<div class="result good">答對！★ +1。${esc(note)}</div><div class="gain">${cardTag(code)}</div>`); }
+  else { p.risk++; voice("wrong"); addHTML(`<div class="result bad">用錯表單，流程沒有留下正確紀錄，風險 +1。${esc(note)}</div>`); }
+  log(`<b>${esc(p.name)}</b> 日常申請：${esc(sit)} → ${ok ? "答對" : "答錯，風險 +1"}`);
+  await waitBtns([["繼續", 1, true]]);
+}
+async function resolveMonthly(p) {
+  const [q, code, dis, note] = decks.monthly.pop();
+  if (!decks.monthly.length) decks.monthly = shuffle(MONTHLY);
+  pull("dk-monthly"); voice("monthly"); host("monthly");
+  open("monthly", "每月月報卡", "月報日", sayHTML("monthly"));
+  const ok = await quiz(q, label(code), dis.map(label));
+  if (ok) { give(p, [code]); p.budget++; voice("correct"); addHTML(`<div class="result good">答對！主管肯定，預算 +1。${esc(note)}</div><div class="gain">${cardTag(code)}</div>`); }
+  else { voice("wrong"); addHTML(`<div class="result info">${esc(note)}</div>`); }
+  log(`<b>${esc(p.name)}</b> 月報日 → ${ok ? "答對，預算 +1" : "答錯"}`);
+  await waitBtns([["繼續", 1, true]]);
+}
+async function resolveEvent(p) {
+  const [title, story, def, lesson] = decks.event.pop();
+  if (!decks.event.length) decks.event = shuffle(EVENTS);
+  pull("dk-event"); voice("event"); host("event", `資安事件：${title}！`);
+  open("event", "資安事件卡", title, sayHTML("event", esc(story)));
+  addHTML(`<div class="result info">需要的防禦紀錄：${cardTag(def)}</div>`);
+  await waitBtns([["檢查我的紀錄卡", 1, true]]);
+  $("cbody").lastChild.remove();
+  if (p.cards.has(def)) { p.stars++; voice("defend"); addHTML(sayHTML("defend") + `<div class="result good">防禦成功！★ +1。${esc(lesson)}</div>`); log(`<b>${esc(p.name)}</b> 擋下「${title}」★`); }
+  else if (p.shield) { p.shield--; voice("defend"); addHTML(`<div class="result good">沒有對應紀錄，但阿拉蕾的防護盾擋下了這次事件！${esc(lesson)}</div>`); log(`<b>${esc(p.name)}</b> 用防護盾擋下「${title}」`); }
+  else { p.risk += 2; give(p, ["L4-46"]); voice("hit"); addHTML(sayHTML("hit") + `<div class="result bad">風險 +2。事件已通報，取得 ${cardTag("L4-46")}。${esc(lesson)}</div>`); log(`<b>${esc(p.name)}</b> 遭遇「${title}」，風險 +2`); }
+  await waitBtns([["繼續", 1, true]]);
+}
+async function resolveHelp(p) {
+  voice("help"); host("help");
+  open("help", "AI 小助手", "阿拉蕾出動", sayHTML("help"));
+  const missed = Object.keys(MONTHS).map(Number).filter(m => m > 1 && m <= Math.floor(p.pos / 2) + 1 && !MONTHS[m][1].every(c => p.cards.has(c)));
+  const roll = Math.floor(Math.random() * 4);
+  if (roll === 0) { give(p, ["L4-45"]); p.stars++; addHTML(`<div class="result good">AI 情資摘要：幫你整理好本月情資，★ +1。</div><div class="gain">${cardTag("L4-45")}</div>`); log(`<b>${esc(p.name)}</b> 得到 AI 情資摘要`); }
+  else if (roll === 1 && missed.length) {
+    const m = missed[missed.length - 1]; give(p, MONTHS[m][1]);
+    addHTML(`<div class="result good">到期提醒：你錯過了 ${m} 月「${MONTHS[m][0]}」，阿拉蕾幫你補做了！</div><div class="gain">${MONTHS[m][1].map(cardTag).join("")}</div>`); log(`<b>${esc(p.name)}</b> 補做 ${m} 月工作`);
+  }
+  else if (roll === 2) { p.shield++; addHTML(`<div class="result good">防護盾：下一次資安事件，就算沒有對應紀錄也能擋下來。</div>`); log(`<b>${esc(p.name)}</b> 獲得防護盾`); }
+  else { p.budget++; addHTML(`<div class="result good">月報草稿：幫你省下時間，預算 +1。</div>`); log(`<b>${esc(p.name)}</b> 預算 +1`); }
+  await waitBtns([["謝謝阿拉蕾！", 1, true]]);
+}
+const AUDIT_ASK = ["請給我看紀錄。", "這是誰核准的？", "多久做一次？上次是什麼時候？", "上次的矯正措施關閉了嗎？", "你怎麼知道它有效？"];
+async function resolveAudit(p) {
+  const upto = Math.floor(p.pos / 2) + 1; // months whose task space is already behind the player
+  let pool = [];
+  for (let m = 1; m <= upto; m++) pool = pool.concat(MONTHS[m][1].filter(c => CARD[c][1]));
+  pool = pool.concat(["L4-08", "L4-45", "L4-18"].filter(() => upto > 2));
+  const code = pool[Math.floor(Math.random() * pool.length)];
+  voice("audit"); host("audit", "Allan 稽核員來了！");
+  open("audit", "Allan 稽核", "抽查紀錄", sayHTML("audit", `「${AUDIT_ASK[Math.floor(Math.random() * AUDIT_ASK.length)]}」<br>我要看：<b>${esc(label(code))}</b>`));
+  await waitBtns([["拿出紀錄", 1, true]]);
+  $("cbody").lastChild.remove();
+  if (p.cards.has(code)) { p.stars += 2; voice("auditPass"); addHTML(sayHTML("auditPass") + `<div class="result good">符合！★ +2。</div>`); log(`<b>${esc(p.name)}</b> 稽核抽查 ${esc(CARD[code][0])} → 符合 ★★`); }
+  else { p.risk++; voice("auditFail"); addHTML(sayHTML("auditFail") + `<div class="result bad">找不到 ${esc(label(code))}，開立缺失，風險 +1。</div>`); log(`<b>${esc(p.name)}</b> 稽核抽查 ${esc(CARD[code][0])} → 缺失，風險 +1`); }
+  await waitBtns([["繼續", 1, true]]);
+}
+async function offerCatchUp(p, months) {
+  const list = months.filter(m => !MONTHS[m][1].every(c => p.cards.has(c)));
+  if (!list.length) return;
+  open("month", "路過月份", "要補做嗎？", sayHTML("month", `你走過了 ${list.map(m => m + " 月").join("、")}。每補做一個月要花 1 預算（沒有 ★）。你現在有 ${p.budget} 預算。`));
+  addHTML(`<div class="opts" id="picks">${list.map(m => `<label class="pick"><input type="checkbox" value="${m}"><span>${m} 月「${MONTHS[m][0]}」・${MONTHS[m][1].length} 張紀錄卡</span></label>`).join("")}</div>`);
+  const boxes = [...$("picks").querySelectorAll("input")];
+  const sync = () => { const n = boxes.filter(b => b.checked).length; boxes.forEach(b => b.disabled = !b.checked && n >= p.budget); };
+  boxes.forEach(b => b.addEventListener("change", sync)); sync();
+  await waitBtns([["確定", 1, true]]);
+  const chosen = boxes.filter(b => b.checked).map(b => +b.value);
+  chosen.forEach(m => { p.budget--; give(p, MONTHS[m][1]); });
+  if (chosen.length) log(`<b>${esc(p.name)}</b> 花 ${chosen.length} 預算補做 ${chosen.map(m => m + " 月").join("、")}`);
+}
+function score(p) {
+  const cards = [...p.cards];
+  const must = cards.filter(c => CARD[c][1]).length;
+  return { must, cover: must / MUST_TOTAL, pts: cards.length + must + p.stars - 2 * p.risk, certified: must / MUST_TOTAL >= .6 && p.risk <= 4 };
+}
+async function finalAudit(p) {
+  give(p, MONTHS[12][1]);
+  const s = score(p);
+  voice("final"); host("final");
+  open("start", "12 月底", "外部稽核", sayHTML("final"));
+  addHTML(`<div class="result info">稽核必要紀錄：<b>${s.must} / ${MUST_TOTAL}</b>（覆蓋率 ${Math.round(s.cover * 100)}%）・風險 <b>${p.risk}</b>・★ <b>${p.stars}</b>・紀錄卡 <b>${p.cards.size}</b> 張<br>得分：<b>${s.pts}</b></div>`);
+  await waitBtns([["公布結果", 1, true]]);
+  $("cbody").lastChild.remove();
+  voice(s.certified ? "cert" : "nocert");
+  addHTML(`<div class="cert${s.certified ? "" : " no"}"><b>${s.certified ? "通過驗證：取得 ISO/IEC 27001 證書" : "未通過：需改善後再驗證"}</b>${esc(p.name)}・${s.certified ? "一整年確實運作，紀錄齊全" : (s.cover < .6 ? "必要紀錄不足 60%" : "") + (s.cover < .6 && p.risk > 4 ? "，" : "") + (p.risk > 4 ? "風險超過 4" : "")}</div>` + sayHTML(s.certified ? "cert" : "nocert"));
+  log(`<b>${esc(p.name)}</b> 外部稽核：${s.certified ? "通過驗證" : "未通過"}，得分 ${s.pts}`);
+  p.done = true;
+  await waitBtns([["好", 1, true]]);
+}
+function pull(id) { const d = $(id); d.classList.remove("pull"); void d.offsetWidth; d.classList.add("pull"); setTimeout(() => d.classList.remove("pull"), 900); }
+
+/* ================= turn loop ================= */
+async function takeTurn() {
+  if (busy) return; const p = players[cur]; if (!p || p.done) return;
+  busy = true; refreshUI(); unlocked = true;
+  try { await playTurn(p); } catch (err) { console.error(err); close(); }
+  busy = false;
+  nextPlayer();
+}
+async function playTurn(p) {
+  const v = await rollDie();
+  log(`<b>${esc(p.name)}</b> 擲出 ${v} 點`);
+  const { passed, finished } = await move(p, v);
+  refreshUI();
+  if (passed.length) await offerCatchUp(p, passed);
+  if (finished) await finalAudit(p);
+  else {
+    const t = TYPE(p.pos);
+    if (t === "month") await resolveMonth(p, monthOf(p.pos));
+    else if (t === "daily") await resolveDaily(p);
+    else if (t === "event") await resolveEvent(p);
+    else if (t === "monthly") await resolveMonthly(p);
+    else if (t === "help") await resolveHelp(p);
+    else if (t === "audit") await resolveAudit(p);
+  }
+  close();
+}
+function nextPlayer() {
+  if (players.every(p => p.done)) { refreshUI(); return showResults(); }
+  do { cur = (cur + 1) % players.length; } while (players[cur].done);
+  refreshUI(); drawPawns();
+  host("turn", `輪到 ${players[cur].name} 了！擲骰子吧！`);
+  if (players.length > 1) voice("turn");
+  document.querySelectorAll(".cell.lit").forEach(c => c.classList.remove("lit"));
+}
+function showResults() {
+  const rows = players.map(p => ({ p, s: score(p) })).sort((a, b) => (b.s.certified - a.s.certified) || (b.s.pts - a.s.pts));
+  open("start", "遊戲結束", "年度成績單", sayHTML(rows[0].s.certified ? "cert" : "nocert", rows[0].s.certified ? `恭喜 ${esc(rows[0].p.name)}！這一年的 ISMS 跑得最紮實！` : "大家都還差一點，明年再一起挑戰！"));
+  addHTML(`<table class="rank"><thead><tr><th>名次</th><th>玩家</th><th>驗證</th><th>必要紀錄</th><th>風險</th><th>得分</th></tr></thead><tbody>${rows.map(({ p, s }, i) => `<tr><td>${i + 1}</td><td>${esc(p.name)}</td><td>${s.certified ? "通過" : "未通過"}</td><td class="n">${s.must}/${MUST_TOTAL}</td><td class="n">${p.risk}</td><td class="n">${s.pts}</td></tr>`).join("")}</tbody></table>`);
+  waitBtns([["再玩一局", 1, true], ["看看棋盤", 0]]).then(v => { close(); if (v) setup(); });
+}
+
+/* ================= setup ================= */
+function setup() {
+  open("start", "開局設定", "ISMS 大富翁", sayHTML("welcome"));
+  addHTML(`<label for="np">玩家人數</label><div class="pawns" id="np">${[1, 2, 3, 4].map(n => `<button type="button" class="chipbtn" data-n="${n}" aria-pressed="${n === 2}">${n} 人</button>`).join("")}</div><div id="seats" style="display:grid;gap:10px"></div><div class="result info">每人起始：1 月年度啟動（2 張紀錄卡）＋ 3 預算。路過的月份可以花預算補做。</div>`);
+  let n = 2; const order = ["arale", "allan", "an", "zi"]; const picks = order.slice();
+  const names = ["玩家一", "玩家二", "玩家三", "玩家四"];
+  const seats = () => {
+    $("seats").innerHTML = Array.from({ length: n }, (_, k) => `<div class="seat"><div class="av" id="sa${k}"></div><div style="display:grid;gap:4px"><input type="text" id="sn${k}" value="${esc(names[k])}" aria-label="玩家 ${k + 1} 名稱" maxlength="10"><div class="pawns">${order.map(pk => `<button type="button" class="chipbtn" data-k="${k}" data-p="${pk}" aria-pressed="${picks[k] === pk}">${PAWNS[pk].n}</button>`).join("")}</div></div></div>`).join("");
+    for (let k = 0; k < n; k++) setAv($("sa" + k), picks[k]);
+    $("seats").querySelectorAll("[data-p]").forEach(b => b.addEventListener("click", () => { for (let k = 0; k < n; k++) names[k] = $("sn" + k).value; picks[+b.dataset.k] = b.dataset.p; seats(); }));
+  };
+  $("np").querySelectorAll("button").forEach(b => b.addEventListener("click", () => { for (let k = 0; k < n; k++) names[k] = $("sn" + k).value; n = +b.dataset.n; $("np").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); seats(); }));
+  seats();
+  waitBtns([["開始遊戲 ▶", 1, true]]).then(() => {
+    players = Array.from({ length: n }, (_, k) => ({ name: ($("sn" + k).value || names[k]).trim().slice(0, 10) || names[k], pawn: picks[k], pos: 0, budget: 3, stars: 0, risk: 0, shield: 0, cards: new Set(MONTHS[1][1]), done: false }));
+    cur = 0; decks = { daily: shuffle(DAILY), event: shuffle(EVENTS), monthly: shuffle(MONTHLY) };
+    $("log").innerHTML = ""; log("新的一年開始！每人完成 1 月年度啟動，取得 2 張紀錄卡。");
+    close(); unlocked = true; drawPawns(); refreshUI();
+    host("turn", `輪到 ${players[0].name} 了！擲骰子吧！`); voice("welcome");
+  });
+}
+
+/* ================= wiring ================= */
+$("roll").addEventListener("click", takeTurn);
+$("dieBtn").addEventListener("click", takeTurn);
+$("dieBtn").addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); takeTurn(); } });
+$("fix").addEventListener("click", () => { const p = players[cur]; if (!p || p.budget < 2 || p.risk < 1) return; p.budget -= 2; p.risk--; log(`<b>${esc(p.name)}</b> 投入 2 預算改善，風險 −1`); refreshUI(); });
+$("sound").addEventListener("click", () => { soundOn = !soundOn; $("sound").setAttribute("aria-pressed", String(soundOn)); $("sound").textContent = "聲音：" + (soundOn ? "開" : "關"); if (!soundOn && audio) audio.pause(); });
+$("restart").addEventListener("click", () => { if (!busy) setup(); });
+const wrap = $("wrap"), board = $("board");
+function fit() { board.style.setProperty("--s", wrap.clientWidth / 1000); }
+new ResizeObserver(fit).observe(wrap); fit();
+$("hostImg").src = SPRITES.arale_cheer;
+// resting first frame: a sample two-player board, then the setup dialog
+players = [{ name: "玩家一", pawn: "arale", pos: 0, budget: 3, stars: 0, risk: 0, shield: 0, cards: new Set(MONTHS[1][1]), done: false }, { name: "玩家二", pawn: "allan", pos: 0, budget: 3, stars: 0, risk: 0, shield: 0, cards: new Set(MONTHS[1][1]), done: false }];
+drawPawns(); refreshUI();
+setup();
+</script>
